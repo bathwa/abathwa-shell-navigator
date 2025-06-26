@@ -5,6 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
+import { useDataStore } from "@/store/useDataStore";
+import { useEffect } from "react";
 
 // Pages
 import Landing from "./pages/Landing";
@@ -25,21 +27,49 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 const queryClient = new QueryClient();
 
 const App = () => {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, loading, initialize } = useAuthStore();
+  const { syncAllData } = useDataStore();
+
+  useEffect(() => {
+    // Initialize authentication
+    const cleanup = initialize();
+    
+    return cleanup;
+  }, [initialize]);
+
+  useEffect(() => {
+    // Sync data when user is authenticated
+    if (isAuthenticated && user) {
+      syncAllData();
+    }
+  }, [isAuthenticated, user, syncAllData]);
 
   const getDashboardRoute = () => {
     if (!user) return "/";
-    switch (user.role) {
+    
+    // Get role from user metadata or default to entrepreneur
+    const userRole = user.user_metadata?.role || 'entrepreneur';
+    
+    switch (userRole) {
       case 'entrepreneur':
         return "/entrepreneur/dashboard";
       case 'investor':
         return "/investor/dashboard";
       case 'admin':
+      case 'super_admin':
         return "/admin/dashboard";
       default:
-        return "/";
+        return "/entrepreneur/dashboard";
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-white text-lg">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -87,19 +117,19 @@ const App = () => {
             
             {/* Shared Routes (Investor & Admin) */}
             <Route path="/opportunities/:id" element={
-              <ProtectedRoute allowedRoles={['investor', 'admin']}>
+              <ProtectedRoute allowedRoles={['investor', 'admin', 'super_admin']}>
                 <OpportunityDetail />
               </ProtectedRoute>
             } />
 
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={
-              <ProtectedRoute allowedRoles={['admin']}>
+              <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
                 <AdminDashboard />
               </ProtectedRoute>
             } />
             <Route path="/admin/opportunities/:id/review" element={
-              <ProtectedRoute allowedRoles={['admin']}>
+              <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
                 <OpportunityReview />
               </ProtectedRoute>
             } />

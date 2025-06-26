@@ -4,7 +4,11 @@ import { Link } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 
 export const Header = () => {
-  const { user, logout } = useAuthStore()
+  const { user, signOut } = useAuthStore()
+
+  const handleSignOut = async () => {
+    await signOut()
+  }
 
   return (
     <header className="bg-slate-900 border-b border-slate-700 px-6 py-4">
@@ -20,10 +24,10 @@ export const Header = () => {
               className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors"
             >
               <User size={20} />
-              <span>{user.name}</span>
+              <span>{user.user_metadata?.full_name || user.email?.split('@')[0]}</span>
             </Link>
             <button
-              onClick={logout}
+              onClick={handleSignOut}
               className="flex items-center space-x-2 text-slate-300 hover:text-red-400 transition-colors"
             >
               <LogOut size={20} />

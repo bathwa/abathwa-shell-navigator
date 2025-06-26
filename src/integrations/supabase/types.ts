@@ -9,16 +9,141 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      offers: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          investor_id: string
+          opportunity_id: string
+          status: Database["public"]["Enums"]["offer_status"] | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          investor_id: string
+          opportunity_id: string
+          status?: Database["public"]["Enums"]["offer_status"] | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          investor_id?: string
+          opportunity_id?: string
+          status?: Database["public"]["Enums"]["offer_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offers_investor_id_fkey"
+            columns: ["investor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offers_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opportunities: {
+        Row: {
+          amount_sought: number
+          created_at: string | null
+          description: string | null
+          entrepreneur_id: string
+          expected_roi: number | null
+          id: string
+          industry: string | null
+          name: string
+          status: Database["public"]["Enums"]["opportunity_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount_sought: number
+          created_at?: string | null
+          description?: string | null
+          entrepreneur_id: string
+          expected_roi?: number | null
+          id?: string
+          industry?: string | null
+          name: string
+          status?: Database["public"]["Enums"]["opportunity_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount_sought?: number
+          created_at?: string | null
+          description?: string | null
+          entrepreneur_id?: string
+          expected_roi?: number | null
+          id?: string
+          industry?: string | null
+          name?: string
+          status?: Database["public"]["Enums"]["opportunity_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunities_entrepreneur_id_fkey"
+            columns: ["entrepreneur_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          role?: Database["public"]["Enums"]["app_role"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "super_admin" | "admin" | "entrepreneur" | "investor"
+      offer_status: "pending" | "accepted" | "rejected" | "withdrawn"
+      opportunity_status:
+        | "draft"
+        | "pending_review"
+        | "published"
+        | "rejected"
+        | "funded"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +258,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["super_admin", "admin", "entrepreneur", "investor"],
+      offer_status: ["pending", "accepted", "rejected", "withdrawn"],
+      opportunity_status: [
+        "draft",
+        "pending_review",
+        "published",
+        "rejected",
+        "funded",
+      ],
+    },
   },
 } as const

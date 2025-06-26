@@ -1,32 +1,73 @@
 
-import { create } from 'zustand'
-
-interface User {
-  id: string
-  email: string
-  role: 'entrepreneur' | 'investor' | 'admin'
-  name: string
-}
+import { create } from 'zustand';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthState {
-  user: User | null
-  isAuthenticated: boolean
-  login: (email: string, password: string, role: User['role']) => void
-  logout: () => void
+  user: User | null;
+  session: Session | null;
+  isAuthenticated: boolean;
+  loading: boolean;
+  signUp: (email: string, password: string, userData?: any) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signOut: () => Promise<void>;
+  initialize: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
+  session: null,
   isAuthenticated: false,
-  login: (email: string, password: string, role: User['role']) => {
-    // Mock login - in real app this would call Supabase
-    const mockUser: User = {
-      id: '1',
+  loading: true,
+
+  signUp: async (email: string, password: string, userData = {}) => {
+    const { error } = await supabase.auth.signUp({
       email,
-      role,
-      name: email.split('@')[0]
-    }
-    set({ user: mockUser, isAuthenticated: true })
+      password,
+      options: {
+        data: userData,
+        emailRedirectTo: `${window.location.origin}/`
+      }
+    });
+    return { error };
   },
-  logout: () => set({ user: null, isAuthenticated: false })
-}))
+
+  signIn: async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { error };
+  },
+
+  signOut: async () => {
+    await supabase.auth.signOut();
+  },
+
+  initialize: () => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('Auth state changed:', event, session);
+        set({
+          session,
+          user: session?.user ?? null,
+          isAuthenticated: !!session,
+          loading: false
+        });
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      set({
+        session,
+        user: session?.user ?? null,
+        isAuthenticated: !!session,
+        loading: false
+      });
+    });
+
+    return () => subscription.unsubscribe();
+  },
+}));

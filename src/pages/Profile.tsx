@@ -8,9 +8,9 @@ const Profile = () => {
   const { user } = useAuthStore()
   const [isEditing, setIsEditing] = useState(false)
   const [profileData, setProfileData] = useState({
-    name: user?.name || '',
+    name: user?.user_metadata?.full_name || '',
     email: user?.email || '',
-    role: user?.role || '',
+    role: user?.user_metadata?.role || '',
     company: '',
     bio: '',
     location: '',
@@ -61,7 +61,7 @@ const Profile = () => {
               <User className="text-white" size={48} />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">{profileData.name}</h2>
+              <h2 className="text-2xl font-bold text-white">{profileData.name || 'No Name'}</h2>
               <p className="text-slate-400 capitalize">{profileData.role}</p>
             </div>
           </div>

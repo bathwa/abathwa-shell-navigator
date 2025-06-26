@@ -2,6 +2,10 @@
 import { create } from 'zustand';
 import { db, Profile, Opportunity, Offer } from '../data/db';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
+
+type OpportunityStatus = Database['public']['Enums']['opportunity_status'];
+type OfferStatus = Database['public']['Enums']['offer_status'];
 
 interface DataState {
   profiles: Profile[];
@@ -12,7 +16,7 @@ interface DataState {
   fetchData: (table: 'profiles' | 'opportunities' | 'offers') => Promise<void>;
   syncAllData: () => Promise<void>;
   addOpportunity: (opportunity: Omit<Opportunity, 'id' | 'created_at' | 'updated_at' | 'status'>) => Promise<void>;
-  updateOpportunityStatus: (id: string, status: string) => Promise<void>;
+  updateOpportunityStatus: (id: string, status: OpportunityStatus) => Promise<void>;
   addOffer: (offer: Omit<Offer, 'id' | 'created_at'>) => Promise<void>;
 }
 

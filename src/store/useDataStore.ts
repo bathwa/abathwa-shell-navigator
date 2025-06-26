@@ -7,6 +7,9 @@ import type { Database } from '@/integrations/supabase/types';
 type OpportunityStatus = Database['public']['Enums']['opportunity_status'];
 type OfferStatus = Database['public']['Enums']['offer_status'];
 
+// Define the insert types based on Supabase schema
+type OfferInsert = Database['public']['Tables']['offers']['Insert'];
+
 interface DataState {
   profiles: Profile[];
   opportunities: Opportunity[];
@@ -17,7 +20,7 @@ interface DataState {
   syncAllData: () => Promise<void>;
   addOpportunity: (opportunity: Omit<Opportunity, 'id' | 'created_at' | 'updated_at' | 'status'>) => Promise<void>;
   updateOpportunityStatus: (id: string, status: OpportunityStatus) => Promise<void>;
-  addOffer: (offer: Omit<Offer, 'id' | 'created_at'>) => Promise<void>;
+  addOffer: (offer: Omit<OfferInsert, 'id' | 'created_at'>) => Promise<void>;
 }
 
 export const useDataStore = create<DataState>((set, get) => ({
@@ -100,7 +103,7 @@ export const useDataStore = create<DataState>((set, get) => ({
   addOffer: async (offerData) => {
     set({ loading: true });
     try {
-      const { data, error } = await supabase.from('offers').insert([offerData]).select();
+      const { data, error } = await supabase.from('offers').insert(offerData).select();
       if (error) throw error;
       if (data && data.length > 0) {
         const newOffer = data[0] as Offer;

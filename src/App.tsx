@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import { useDataStore } from "@/store/useDataStore";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 
 // Pages
@@ -15,9 +15,13 @@ import SignUp from "./pages/auth/SignUp";
 import EntrepreneurDashboard from "./pages/entrepreneur/EntrepreneurDashboard";
 import CreateOpportunity from "./pages/entrepreneur/CreateOpportunity";
 import InvestorDashboard from "./pages/investor/InvestorDashboard";
+import Portfolio from "./pages/investor/Portfolio";
+import Payments from "./pages/investor/Payments";
 import OpportunityDetail from "./pages/opportunities/OpportunityDetail";
+import OpportunitiesList from "./pages/opportunities/OpportunitiesList";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import OpportunityReview from "./pages/admin/OpportunityReview";
+import OpportunityReviewList from "./pages/admin/OpportunityReviewList";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import UserManagement from "./pages/admin/UserManagement";
@@ -47,7 +51,7 @@ const App = () => {
     }
   }, [isAuthenticated, user, syncAllData]);
 
-  const getDashboardRoute = () => {
+  const getDashboardRoute = useMemo(() => {
     if (!user) return "/";
     
     // Get role from user metadata or default to entrepreneur
@@ -64,7 +68,7 @@ const App = () => {
       default:
         return "/entrepreneur/dashboard";
     }
-  };
+  }, [user]);
 
   if (loading) {
     return (
@@ -83,14 +87,14 @@ const App = () => {
           <BrowserRouter>
             <Routes>
               {/* Public Routes */}
-              <Route path="/" element={!isAuthenticated ? <Landing /> : <Navigate to={getDashboardRoute()} />} />
-              <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to={getDashboardRoute()} />} />
-              <Route path="/signup" element={!isAuthenticated ? <SignUp /> : <Navigate to={getDashboardRoute()} />} />
+              <Route path="/" element={!isAuthenticated ? <Landing /> : <Navigate to={getDashboardRoute} />} />
+              <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to={getDashboardRoute} />} />
+              <Route path="/signup" element={!isAuthenticated ? <SignUp /> : <Navigate to={getDashboardRoute} />} />
 
               {/* Protected Routes */}
               <Route path="/dashboard" element={
                 <ProtectedRoute>
-                  <Navigate to={getDashboardRoute()} />
+                  <Navigate to={getDashboardRoute} />
                 </ProtectedRoute>
               } />
 
@@ -123,11 +127,26 @@ const App = () => {
                   <InvestorDashboard />
                 </ProtectedRoute>
               } />
+              <Route path="/investor/portfolio" element={
+                <ProtectedRoute allowedRoles={['investor']}>
+                  <Portfolio />
+                </ProtectedRoute>
+              } />
+              <Route path="/investor/payments" element={
+                <ProtectedRoute allowedRoles={['investor']}>
+                  <Payments />
+                </ProtectedRoute>
+              } />
               
               {/* Shared Routes (Investor & Admin) */}
               <Route path="/opportunities/:id" element={
                 <ProtectedRoute allowedRoles={['investor', 'admin', 'super_admin']}>
                   <OpportunityDetail />
+                </ProtectedRoute>
+              } />
+              <Route path="/opportunities/list" element={
+                <ProtectedRoute allowedRoles={['investor', 'admin', 'super_admin']}>
+                  <OpportunitiesList />
                 </ProtectedRoute>
               } />
 
@@ -155,6 +174,11 @@ const App = () => {
               <Route path="/admin/opportunities/:id/review" element={
                 <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
                   <OpportunityReview />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/opportunities/review-list" element={
+                <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                  <OpportunityReviewList />
                 </ProtectedRoute>
               } />
 

@@ -103,6 +103,10 @@
     -webkit-text-size-adjust: 100%;
     /* Improve touch targets */
     touch-action: manipulation;
+    /* Optimize for performance */
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   /* PWA specific styles */
@@ -144,6 +148,47 @@
     input, select, textarea {
       font-size: 16px; /* Prevent zoom on iOS */
     }
+
+    /* Better grid layouts on mobile */
+    .grid {
+      grid-template-columns: 1fr;
+    }
+
+    /* Improve navigation on mobile */
+    nav {
+      padding: 0.5rem;
+    }
+
+    /* Better button spacing on mobile */
+    .space-x-2 > * + * {
+      margin-left: 0.5rem;
+    }
+
+    .space-x-4 > * + * {
+      margin-left: 1rem;
+    }
+
+    /* Improve text sizing on mobile */
+    h1 {
+      font-size: 1.875rem;
+      line-height: 2.25rem;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      line-height: 2rem;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      line-height: 1.75rem;
+    }
+
+    /* Better modal/dialog sizing on mobile */
+    [role="dialog"] {
+      margin: 1rem;
+      max-width: calc(100vw - 2rem);
+    }
   }
 
   /* Tablet responsive improvements */
@@ -151,6 +196,19 @@
     .container {
       padding-left: 2rem;
       padding-right: 2rem;
+    }
+
+    /* Better grid layouts on tablet */
+    .grid-cols-2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .grid-cols-3 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .grid-cols-4 {
+      grid-template-columns: repeat(2, 1fr);
     }
   }
 
@@ -160,6 +218,51 @@
     img, svg {
       image-rendering: -webkit-optimize-contrast;
       image-rendering: crisp-edges;
+    }
+  }
+
+  /* Performance optimizations */
+  .animate-in {
+    animation-duration: 150ms;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-out {
+    animation-duration: 150ms;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Loading states */
+  .loading {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  /* Focus styles for accessibility */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Reduce motion for users who prefer it */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Print styles */
+  @media print {
+    .no-print {
+      display: none !important;
     }
   }
 }

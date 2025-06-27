@@ -1,4 +1,4 @@
-import { Home, TrendingUp, Users, Settings, ArrowLeft } from 'lucide-react'
+import { Home, TrendingUp, Users, Settings, ArrowLeft, PieChart, CreditCard, Eye } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { Button } from '@/components/ui/button'
@@ -20,12 +20,14 @@ export const Navigation = () => {
       case 'investor':
         return [
           { to: '/investor/dashboard', icon: Home, label: 'Dashboard' },
-          { to: '/opportunities', icon: TrendingUp, label: 'Browse Opportunities' },
+          { to: '/investor/portfolio', icon: PieChart, label: 'Portfolio' },
+          { to: '/investor/payments', icon: CreditCard, label: 'Payments' },
         ]
       case 'admin':
       case 'super_admin':
         return [
           { to: '/admin/dashboard', icon: Home, label: 'Dashboard' },
+          { to: '/admin/opportunities/review-list', icon: Eye, label: 'Review Opportunities' },
           { to: '/admin/users', icon: Users, label: 'User Management' },
           { to: '/admin/investment-pools', icon: TrendingUp, label: 'Investment Pools' },
           { to: '/admin/escrow', icon: Settings, label: 'Escrow Management' },

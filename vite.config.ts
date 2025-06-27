@@ -30,6 +30,28 @@ export default defineConfig(({ mode }) => ({
               },
             },
           },
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'gstatic-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+            },
+          },
         ],
       },
       manifest: {
@@ -49,15 +71,15 @@ export default defineConfig(({ mode }) => ({
             type: "image/x-icon"
           },
           {
-            src: "/placeholder.svg",
+            src: "/logo-192.png",
             sizes: "192x192",
-            type: "image/svg+xml",
+            type: "image/png",
             purpose: "any"
           },
           {
-            src: "/placeholder.svg",
+            src: "/logo-512.png",
             sizes: "512x512",
-            type: "image/svg+xml",
+            type: "image/png",
             purpose: "any maskable"
           }
         ],
@@ -67,14 +89,14 @@ export default defineConfig(({ mode }) => ({
             short_name: "Dashboard",
             description: "Go to your dashboard",
             url: "/dashboard",
-            icons: [{ src: "/placeholder.svg", sizes: "96x96" }]
+            icons: [{ src: "/logo-192.png", sizes: "96x96" }]
           },
           {
             name: "Create Opportunity",
             short_name: "Create",
             description: "Create a new investment opportunity",
             url: "/entrepreneur/opportunities/new",
-            icons: [{ src: "/placeholder.svg", sizes: "96x96" }]
+            icons: [{ src: "/logo-192.png", sizes: "96x96" }]
           }
         ]
       },
@@ -91,16 +113,44 @@ export default defineConfig(({ mode }) => ({
         manualChunks: {
           vendor: ['react', 'react-dom'],
           router: ['react-router-dom'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select'],
+          ui: [
+            '@radix-ui/react-dialog', 
+            '@radix-ui/react-dropdown-menu', 
+            '@radix-ui/react-select',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-toast',
+            '@radix-ui/react-tooltip'
+          ],
           utils: ['clsx', 'class-variance-authority', 'tailwind-merge'],
           data: ['@supabase/supabase-js', 'dexie', 'dexie-react-hooks'],
           ai: ['@tensorflow/tfjs'],
+          charts: ['recharts'],
+          forms: ['react-hook-form', '@hookform/resolvers', 'zod'],
         },
       },
     },
     chunkSizeWarningLimit: 1000,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: mode === 'production',
+        drop_debugger: mode === 'production',
+      },
+    },
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom'],
+    include: [
+      'react', 
+      'react-dom', 
+      'react-router-dom',
+      '@supabase/supabase-js',
+      'lucide-react',
+      'clsx',
+      'class-variance-authority',
+      'tailwind-merge'
+    ],
+  },
+  css: {
+    devSourcemap: mode === 'development',
   },
 }));

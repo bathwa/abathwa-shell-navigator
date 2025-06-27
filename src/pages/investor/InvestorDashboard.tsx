@@ -288,6 +288,10 @@ export default function InvestorDashboard() {
           </div>
           
           <div className="flex items-center space-x-2">
+            <Button onClick={() => navigate('/opportunities/list')}>
+              <Search className="h-4 w-4 mr-2" />
+              Browse Opportunities
+            </Button>
             <Button variant="outline" onClick={() => navigate('/investor/portfolio')}>
               <Wallet className="h-4 w-4 mr-2" />
               Portfolio

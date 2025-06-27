@@ -26,11 +26,13 @@ import {
   TrendingUp,
   AlertTriangle,
   CheckCircle,
-  XCircle
+  XCircle,
+  ArrowLeft
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/store/authStore';
+import { useNavigate } from 'react-router-dom';
 
 interface InvestmentPool {
   id: string;
@@ -47,14 +49,8 @@ interface InvestmentPool {
   election_voting_end?: string;
   created_at: string;
   updated_at: string;
-  creator?: {
-    full_name: string;
-    email: string;
-  };
-  current_leader?: {
-    full_name: string;
-    email: string;
-  };
+  creator?: { full_name?: string; email?: string };
+  current_leader?: { full_name?: string; email?: string };
 }
 
 interface PoolMember {
@@ -64,11 +60,7 @@ interface PoolMember {
   joined_at: string;
   is_active: boolean;
   investment_contribution: number;
-  member?: {
-    full_name: string;
-    email: string;
-    role: string;
-  };
+  member?: { full_name?: string; email?: string; role?: string };
 }
 
 interface PoolNomination {
@@ -79,14 +71,8 @@ interface PoolNomination {
   nomination_date: string;
   motivation: string;
   status: string;
-  nominee?: {
-    full_name: string;
-    email: string;
-  };
-  nominator?: {
-    full_name: string;
-    email: string;
-  };
+  nominee?: { full_name?: string; email?: string };
+  nominator?: { full_name?: string; email?: string };
 }
 
 interface PoolVote {
@@ -95,19 +81,23 @@ interface PoolVote {
   voter_id: string;
   candidate_id: string;
   vote_date: string;
-  voter?: {
-    full_name: string;
-    email: string;
-  };
-  candidate?: {
-    full_name: string;
-    email: string;
+  voter?: { full_name?: string; email?: string };
+  candidate?: { full_name?: string; email?: string };
+}
+
+// Type guard helpers
+function safeUser(user: any): { full_name: string; email: string; role?: string } {
+  return {
+    full_name: user?.full_name || '',
+    email: user?.email || '',
+    role: user?.role || undefined,
   };
 }
 
 export default function InvestmentPools() {
   const { toast } = useToast();
   const { user: currentUser } = useAuthStore();
+  const navigate = useNavigate();
   
   const [pools, setPools] = useState<InvestmentPool[]>([]);
   const [members, setMembers] = useState<PoolMember[]>([]);
@@ -158,7 +148,11 @@ export default function InvestmentPools() {
         .order('created_at', { ascending: false });
 
       if (poolsError) throw poolsError;
-      setPools(poolsData || []);
+      setPools((poolsData || []).map((p: any) => ({
+        ...p,
+        creator: safeUser(p.creator),
+        current_leader: safeUser(p.current_leader),
+      })));
 
       // Load members
       const { data: membersData, error: membersError } = await supabase
@@ -169,7 +163,10 @@ export default function InvestmentPools() {
         `);
 
       if (membersError) throw membersError;
-      setMembers(membersData || []);
+      setMembers((membersData || []).map((m: any) => ({
+        ...m,
+        member: safeUser(m.member),
+      })));
 
       // Load nominations
       const { data: nominationsData, error: nominationsError } = await supabase
@@ -181,7 +178,11 @@ export default function InvestmentPools() {
         `);
 
       if (nominationsError) throw nominationsError;
-      setNominations(nominationsData || []);
+      setNominations((nominationsData || []).map((n: any) => ({
+        ...n,
+        nominee: safeUser(n.nominee),
+        nominator: safeUser(n.nominator),
+      })));
 
       // Load votes
       const { data: votesData, error: votesError } = await supabase
@@ -193,7 +194,11 @@ export default function InvestmentPools() {
         `);
 
       if (votesError) throw votesError;
-      setVotes(votesData || []);
+      setVotes((votesData || []).map((v: any) => ({
+        ...v,
+        voter: safeUser(v.voter),
+        candidate: safeUser(v.candidate),
+      })));
 
     } catch (error) {
       console.error('Error loading data:', error);
@@ -422,6 +427,15 @@ export default function InvestmentPools() {
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="flex items-center justify-between mb-8">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/admin/dashboard')}
+          className="flex items-center space-x-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back to Dashboard</span>
+        </Button>
         <div>
           <h1 className="text-3xl font-bold">Investment Pools Management</h1>
           <p className="text-muted-foreground">Manage investment pools with automated campaigns and elections</p>

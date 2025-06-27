@@ -25,11 +25,13 @@ import {
   XCircle,
   AlertTriangle,
   Download,
-  Upload
+  Upload,
+  ArrowLeft
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/store/authStore';
+import { useNavigate } from 'react-router-dom';
 
 interface User {
   id: string;
@@ -53,6 +55,7 @@ interface UserStats {
 export default function UserManagement() {
   const { toast } = useToast();
   const { user: currentUser } = useAuthStore();
+  const navigate = useNavigate();
   
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
@@ -70,6 +73,7 @@ export default function UserManagement() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Form states
   const [editForm, setEditForm] = useState({
@@ -92,6 +96,8 @@ export default function UserManagement() {
     bio: ''
   });
 
+  const allRoles = ['super_admin', 'admin', 'entrepreneur', 'investor', 'service_provider'] as const;
+
   useEffect(() => {
     loadUsers();
   }, []);
@@ -112,12 +118,7 @@ export default function UserManagement() {
       setUsers(usersWithEmail);
       calculateStats(usersWithEmail);
     } catch (error) {
-      console.error('Error loading users:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load users.",
-        variant: "destructive",
-      });
+      setError('Failed to load users');
     } finally {
       setIsLoading(false);
     }
@@ -153,7 +154,7 @@ export default function UserManagement() {
 
     // Role filter
     if (roleFilter !== 'all') {
-      filtered = filtered.filter(user => user.role === roleFilter);
+      filtered = filtered.filter(user => allRoles.includes(user.role));
     }
 
     // Status filter
@@ -369,7 +370,7 @@ export default function UserManagement() {
       let fixedCount = 0;
       for (const user of usersData as User[]) {
         let correctRole = user.role;
-        if (!['entrepreneur', 'investor', 'admin', 'super_admin', 'service_provider'].includes(user.role)) {
+        if (!allRoles.includes(user.role)) {
           correctRole = 'entrepreneur';
         }
         if (user.role !== correctRole) {
@@ -396,12 +397,17 @@ export default function UserManagement() {
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">User Management</h1>
-          <p className="text-muted-foreground">Manage platform users and their roles</p>
-        </div>
-        
+      <div className="flex items-center justify-between mb-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/admin/dashboard')}
+          className="flex items-center space-x-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back to Dashboard</span>
+        </Button>
+        <h1 className="text-3xl font-bold">User Management</h1>
         <div className="flex items-center space-x-2">
           <Button variant="outline" onClick={exportUsers}>
             <Download className="h-4 w-4 mr-2" />

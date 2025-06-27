@@ -1,3 +1,4 @@
+
 import Dexie, { Table } from 'dexie';
 
 export interface Profile {
@@ -183,9 +184,12 @@ export interface CurrencyConversion {
 export interface PoolDiscussion {
   id: string;
   pool_id: string;
-  user_id: string;
+  created_by: string;
+  title: string;
   content: string;
+  status: string;
   created_at: string;
+  closed_at?: string;
   updated_at: string;
 }
 
@@ -193,8 +197,12 @@ export interface PoolObjective {
   id: string;
   pool_id: string;
   title: string;
-  description: string;
-  target_date: string;
+  description?: string;
+  target_amount: number;
+  current_amount: number;
+  contribution_type: string;
+  frequency?: string;
+  due_date?: string;
   status: string;
   created_at: string;
   updated_at: string;
@@ -205,6 +213,10 @@ export interface PoolReport {
   pool_id: string;
   title: string;
   content: string;
+  report_month: string;
+  report_year: number;
+  ai_summary?: string;
+  drbe_insights?: string;
   created_at: string;
   updated_at: string;
 }
@@ -212,7 +224,7 @@ export interface PoolReport {
 export interface PoolInvestment {
   id: string;
   pool_id: string;
-  investor_id: string;
+  opportunity_id: string;
   amount: number;
   status: string;
   created_at: string;
@@ -240,7 +252,7 @@ export class AbathwaDexie extends Dexie {
 
   constructor() {
     super('AbathwaCapitalDB');
-    this.version(3).stores({
+    this.version(4).stores({
       profiles: 'id,role',
       opportunities: 'id,entrepreneur_id,status',
       offers: 'id,opportunity_id,investor_id',
@@ -254,10 +266,10 @@ export class AbathwaDexie extends Dexie {
       announcements: 'id,created_by',
       investment_pools: 'id,created_by,status',
       currency_conversions: '++id,fromCurrency,toCurrency,timestamp',
-      pool_discussions: 'id,pool_id,user_id',
+      pool_discussions: 'id,pool_id,created_by',
       pool_objectives: 'id,pool_id',
       pool_reports: 'id,pool_id',
-      pool_investments: 'id,pool_id,investor_id',
+      pool_investments: 'id,pool_id,opportunity_id',
     });
   }
 }

@@ -512,6 +512,102 @@ export type Database = {
           },
         ]
       }
+      pool_discussions: {
+        Row: {
+          closed_at: string | null
+          content: string
+          created_at: string | null
+          created_by: string
+          id: string
+          pool_id: string
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          closed_at?: string | null
+          content: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          pool_id: string
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          closed_at?: string | null
+          content?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          pool_id?: string
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pool_discussions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pool_discussions_pool_id_fkey"
+            columns: ["pool_id"]
+            isOneToOne: false
+            referencedRelation: "investment_pools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pool_investments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          opportunity_id: string
+          pool_id: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          opportunity_id: string
+          pool_id: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          opportunity_id?: string
+          pool_id?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pool_investments_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pool_investments_pool_id_fkey"
+            columns: ["pool_id"]
+            isOneToOne: false
+            referencedRelation: "investment_pools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pool_members: {
         Row: {
           id: string
@@ -599,6 +695,106 @@ export type Database = {
           },
           {
             foreignKeyName: "pool_nominations_pool_id_fkey"
+            columns: ["pool_id"]
+            isOneToOne: false
+            referencedRelation: "investment_pools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pool_objectives: {
+        Row: {
+          contribution_type: string
+          created_at: string | null
+          current_amount: number
+          description: string | null
+          due_date: string | null
+          frequency: string | null
+          id: string
+          pool_id: string
+          status: string | null
+          target_amount: number
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          contribution_type: string
+          created_at?: string | null
+          current_amount?: number
+          description?: string | null
+          due_date?: string | null
+          frequency?: string | null
+          id?: string
+          pool_id: string
+          status?: string | null
+          target_amount: number
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          contribution_type?: string
+          created_at?: string | null
+          current_amount?: number
+          description?: string | null
+          due_date?: string | null
+          frequency?: string | null
+          id?: string
+          pool_id?: string
+          status?: string | null
+          target_amount?: number
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pool_objectives_pool_id_fkey"
+            columns: ["pool_id"]
+            isOneToOne: false
+            referencedRelation: "investment_pools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pool_reports: {
+        Row: {
+          ai_summary: string | null
+          content: string
+          created_at: string | null
+          drbe_insights: string | null
+          id: string
+          pool_id: string
+          report_month: string
+          report_year: number
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          ai_summary?: string | null
+          content: string
+          created_at?: string | null
+          drbe_insights?: string | null
+          id?: string
+          pool_id: string
+          report_month: string
+          report_year: number
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          ai_summary?: string | null
+          content?: string
+          created_at?: string | null
+          drbe_insights?: string | null
+          id?: string
+          pool_id?: string
+          report_month?: string
+          report_year?: number
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pool_reports_pool_id_fkey"
             columns: ["pool_id"]
             isOneToOne: false
             referencedRelation: "investment_pools"

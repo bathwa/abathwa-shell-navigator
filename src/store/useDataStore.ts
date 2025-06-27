@@ -1,6 +1,5 @@
-
 import { create } from 'zustand';
-import { db, Profile, Opportunity, Offer, Payment, Milestone, Agreement, ServiceProvider, ServiceRequest, Remark, RatingReview, Announcement, InvestmentPool } from '../data/db';
+import { db, Profile, Opportunity, Offer, Payment, Milestone, Agreement, ServiceProvider, ServiceRequest, Remark, RatingReview, Announcement, InvestmentPool, PoolDiscussion, PoolObjective, PoolReport, PoolInvestment } from '../data/db';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -30,6 +29,10 @@ interface DataState {
   ratingsReviews: RatingReview[];
   announcements: Announcement[];
   investmentPools: InvestmentPool[];
+  poolDiscussions: PoolDiscussion[];
+  poolObjectives: PoolObjective[];
+  poolReports: PoolReport[];
+  poolInvestments: PoolInvestment[];
   loading: boolean;
   lastSync: number | null;
   fetchData: (table: string) => Promise<void>;
@@ -55,6 +58,10 @@ export const useDataStore = create<DataState>((set, get) => ({
   ratingsReviews: [],
   announcements: [],
   investmentPools: [],
+  poolDiscussions: [],
+  poolObjectives: [],
+  poolReports: [],
+  poolInvestments: [],
   loading: false,
   lastSync: null,
 
@@ -97,6 +104,10 @@ export const useDataStore = create<DataState>((set, get) => ({
     await get().fetchData('ratings_reviews');
     await get().fetchData('announcements');
     await get().fetchData('investment_pools');
+    await get().fetchData('pool_discussions');
+    await get().fetchData('pool_objectives');
+    await get().fetchData('pool_reports');
+    await get().fetchData('pool_investments');
   },
 
   addOpportunity: async (opportunityData) => {

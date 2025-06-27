@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -148,14 +147,24 @@ export default function InvestmentPools() {
     if (!user) return;
 
     try {
+      // Validate required fields
+      if (!newPool.name.trim()) {
+        toast({
+          title: "Error",
+          description: "Pool name is required.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Set election dates: January 10th of current year unless postponed
       const currentYear = new Date().getFullYear();
       const electionDate = new Date(currentYear, 0, 10); // January 10th
       
       const poolData = {
-        name: newPool.name,
-        description: newPool.description,
-        target_amount: newPool.target_amount ? parseFloat(newPool.target_amount) : null,
+        name: newPool.name.trim(),
+        description: newPool.description.trim() || null,
+        target_amount: newPool.target_amount ? parseFloat(newPool.target_amount) : 0, // Default to 0 instead of null
         max_members: newPool.max_members ? parseInt(newPool.max_members) : null,
         min_contribution: newPool.min_contribution ? parseFloat(newPool.min_contribution) : null,
         joining_fee: newPool.joining_fee ? parseFloat(newPool.joining_fee) : null,
@@ -194,7 +203,7 @@ export default function InvestmentPools() {
       console.error('Error creating pool:', error);
       toast({
         title: "Error",
-        description: "Failed to create investment pool.",
+        description: "Failed to create investment pool. Please check your input and try again.",
         variant: "destructive",
       });
     }

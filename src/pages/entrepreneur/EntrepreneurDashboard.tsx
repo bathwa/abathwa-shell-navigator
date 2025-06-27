@@ -213,18 +213,6 @@ export default function EntrepreneurDashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-bold text-center sm:text-left">Entrepreneur Dashboard</h1>
           </div>
-          <div className="mt-2 sm:mt-0 flex justify-center sm:justify-end">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center space-x-2 text-slate-300 hover:text-white"
-              data-testid="back-button"
-            >
-              <ArrowLeft size={20} />
-              <span>Back to Dashboard</span>
-            </Button>
-          </div>
         </div>
 
         {/* Action Buttons Row (Scrollable on mobile) */}

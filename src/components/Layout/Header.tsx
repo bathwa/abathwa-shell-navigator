@@ -2,6 +2,7 @@ import { LogOut, User } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { CurrencySelector } from '@/components/ui/currency-selector'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 export const Header = () => {
   const { user, signOut } = useAuthStore()
@@ -19,6 +20,7 @@ export const Header = () => {
         
         {user && (
           <div className="flex items-center space-x-2 sm:space-x-4">
+            <ThemeToggle />
             <CurrencySelector
               variant="compact"
               showLabel={false}

@@ -1,8 +1,8 @@
-
 import { LogOut, User, Menu, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { CurrencySelector } from '@/components/ui/currency-selector'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
 
@@ -28,21 +28,24 @@ export const MobileHeader = () => {
           </Link>
           
           {user && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleMenu}
-              className="text-slate-300 hover:text-white p-2"
-              data-testid="mobile-menu-toggle"
-            >
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </Button>
+            <div className="flex items-center space-x-2">
+              <ThemeToggle />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleMenu}
+                className="text-slate-300 hover:text-white p-2"
+                data-testid="mobile-menu-toggle"
+              >
+                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </Button>
+            </div>
           )}
         </div>
       </header>
 
       {/* Mobile Menu Overlay */}
-      {isMenuOpen && user && (
+      {isMenuOpen && (
         <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-sm z-40 md:hidden">
           <div className="flex flex-col items-center justify-center min-h-screen space-y-8 p-6">
             <div className="text-center space-y-4">

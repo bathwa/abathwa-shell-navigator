@@ -124,7 +124,7 @@ export default function OpportunitiesList() {
     }
 
     // ROI filter
-    if (roiFilter && opp.expected_roi) {
+    if (roiFilter) {
       const minRoi = parseInt(roiFilter);
       filtered = filtered.filter(opp => opp.expected_roi && opp.expected_roi >= minRoi);
     }

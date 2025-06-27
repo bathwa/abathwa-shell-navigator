@@ -57,8 +57,8 @@ export const Navigation = () => {
       <div className="flex items-center justify-between max-w-7xl mx-auto w-full">
         <div className="flex items-center space-x-4 overflow-x-auto no-scrollbar">
           {/* Back button for non-home pages */}
-          {location.pathname !== '/' && location.pathname !== '/entrepreneur/dashboard' && 
-           location.pathname !== '/investor/dashboard' && location.pathname !== '/admin/dashboard' && (
+          {location.pathname !== '/' && 
+           !location.pathname.includes('/dashboard') && (
             <Button
               variant="ghost"
               size="sm"

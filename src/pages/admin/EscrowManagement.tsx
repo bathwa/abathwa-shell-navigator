@@ -41,11 +41,10 @@ interface EscrowAccount {
   opportunity?: {
     name: string;
     entrepreneur_id: string;
-  };
+  } | null;
   account_holder?: {
     full_name: string;
-    email: string;
-  };
+  } | null;
 }
 
 interface Payment {
@@ -66,12 +65,10 @@ interface Payment {
   created_at: string;
   sender?: {
     full_name: string;
-    email: string;
-  };
+  } | null;
   receiver?: {
     full_name: string;
-    email: string;
-  };
+  } | null;
 }
 
 export default function EscrowManagement() {
@@ -112,25 +109,44 @@ export default function EscrowManagement() {
         .select(`
           *,
           opportunity:opportunities!escrow_accounts_opportunity_id_fkey(name, entrepreneur_id),
-          account_holder:profiles!escrow_accounts_account_holder_id_fkey(full_name, email)
+          account_holder:profiles!escrow_accounts_account_holder_id_fkey(full_name)
         `)
         .order('created_at', { ascending: false });
 
-      if (escrowError) throw escrowError;
-      setEscrowAccounts(escrowData || []);
+      if (escrowError) {
+        console.error('Escrow query error:', escrowError);
+        throw escrowError;
+      }
+      
+      // Filter out rows with query errors and ensure proper typing
+      const validEscrowData = (escrowData || []).filter(account => 
+        account.account_holder && typeof account.account_holder === 'object' && !('error' in account.account_holder)
+      ) as EscrowAccount[];
+      
+      setEscrowAccounts(validEscrowData);
 
       // Load payments
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('payments')
         .select(`
           *,
-          sender:profiles!payments_sender_id_fkey(full_name, email),
-          receiver:profiles!payments_receiver_id_fkey(full_name, email)
+          sender:profiles!payments_sender_id_fkey(full_name),
+          receiver:profiles!payments_receiver_id_fkey(full_name)
         `)
         .order('created_at', { ascending: false });
 
-      if (paymentsError) throw paymentsError;
-      setPayments(paymentsData || []);
+      if (paymentsError) {
+        console.error('Payments query error:', paymentsError);
+        throw paymentsError;
+      }
+      
+      // Filter out rows with query errors and ensure proper typing
+      const validPaymentsData = (paymentsData || []).filter(payment => 
+        payment.sender && typeof payment.sender === 'object' && !('error' in payment.sender) &&
+        payment.receiver && typeof payment.receiver === 'object' && !('error' in payment.receiver)
+      ) as Payment[];
+      
+      setPayments(validPaymentsData);
 
     } catch (error) {
       console.error('Error loading data:', error);
@@ -364,7 +380,7 @@ Generated on: ${new Date().toLocaleString()}
                             {getEscrowStatusBadge(account.status)}
                           </div>
                           <p className="text-muted-foreground">
-                            Account Holder: {account.account_holder?.full_name}
+                            Account Holder: {account.account_holder?.full_name || 'Unknown'}
                           </p>
                           <div className="flex items-center space-x-4 text-sm">
                             <span className="flex items-center space-x-1">
@@ -400,7 +416,6 @@ Generated on: ${new Date().toLocaleString()}
           </Card>
         </TabsContent>
 
-        {/* Payments Tab */}
         <TabsContent value="payments" className="space-y-6">
           <Card>
             <CardHeader>
@@ -428,7 +443,7 @@ Generated on: ${new Date().toLocaleString()}
                             {getStatusBadge(payment.status)}
                           </div>
                           <p className="text-muted-foreground">
-                            From: {payment.sender?.full_name} → To: {payment.receiver?.full_name}
+                            From: {payment.sender?.full_name || 'Unknown'} → To: {payment.receiver?.full_name || 'Unknown'}
                           </p>
                           <div className="flex items-center space-x-4 text-sm">
                             <span className="flex items-center space-x-1">
@@ -609,11 +624,11 @@ Generated on: ${new Date().toLocaleString()}
               </div>
               <div>
                 <Label>From</Label>
-                <p>{selectedPayment.sender?.full_name} ({selectedPayment.sender?.email})</p>
+                <p>{selectedPayment.sender?.full_name || 'Unknown'}</p>
               </div>
               <div>
                 <Label>To</Label>
-                <p>{selectedPayment.receiver?.full_name} ({selectedPayment.receiver?.email})</p>
+                <p>{selectedPayment.receiver?.full_name || 'Unknown'}</p>
               </div>
               {selectedPayment.payer_proof_url && (
                 <div>
@@ -684,4 +699,4 @@ Generated on: ${new Date().toLocaleString()}
       </Dialog>
     </div>
   );
-} 
+}

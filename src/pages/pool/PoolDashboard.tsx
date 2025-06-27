@@ -45,9 +45,8 @@ interface PoolMember {
   investment_contribution: number;
   member?: {
     full_name: string;
-    email: string;
     role: string;
-  };
+  } | null;
 }
 
 interface PoolDiscussion {
@@ -61,8 +60,7 @@ interface PoolDiscussion {
   closed_at?: string;
   creator?: {
     full_name: string;
-    email: string;
-  };
+  } | null;
 }
 
 interface PoolReport {
@@ -145,8 +143,8 @@ export default function PoolDashboard() {
         .from('investment_pools')
         .select(`
           *,
-          creator:profiles!investment_pools_created_by_fkey(full_name, email),
-          current_leader:profiles!investment_pools_current_leader_id_fkey(full_name, email)
+          creator:profiles!investment_pools_created_by_fkey(full_name),
+          current_leader:profiles!investment_pools_current_leader_id_fkey(full_name)
         `)
         .eq('id', poolId)
         .single();
@@ -159,26 +157,47 @@ export default function PoolDashboard() {
         .from('pool_members')
         .select(`
           *,
-          member:profiles!pool_members_member_id_fkey(full_name, email, role)
+          member:profiles!pool_members_member_id_fkey(full_name, role)
         `)
         .eq('pool_id', poolId)
         .eq('is_active', true);
 
-      if (membersError) throw membersError;
-      setMembers(membersData || []);
+      if (membersError) {
+        console.error('Members query error:', membersError);
+        throw membersError;
+      }
+      
+      // Filter out rows with query errors
+      const validMembersData = (membersData || []).filter(member => 
+        member.member && typeof member.member === 'object' && !('error' in member.member)
+      ) as PoolMember[];
+      
+      setMembers(validMembersData);
 
       // Load pool discussions
       const { data: discussionsData, error: discussionsError } = await supabase
         .from('pool_discussions')
         .select(`
           *,
-          creator:profiles!pool_discussions_created_by_fkey(full_name, email)
+          creator:profiles!pool_discussions_created_by_fkey(full_name)
         `)
         .eq('pool_id', poolId)
         .order('created_at', { ascending: false });
 
-      if (discussionsError) throw discussionsError;
-      setDiscussions(discussionsData || []);
+      if (discussionsError) {
+        console.error('Discussions query error:', discussionsError);
+        throw discussionsError;
+      }
+      
+      // Filter out rows with query errors and ensure proper typing
+      const validDiscussionsData = (discussionsData || []).filter(discussion => 
+        discussion.creator && typeof discussion.creator === 'object' && !('error' in discussion.creator)
+      ).map(discussion => ({
+        ...discussion,
+        status: discussion.status as 'open' | 'closed'
+      })) as PoolDiscussion[];
+      
+      setDiscussions(validDiscussionsData);
 
       // Load pool reports
       const { data: reportsData, error: reportsError } = await supabase
@@ -214,7 +233,15 @@ export default function PoolDashboard() {
         .order('created_at', { ascending: false });
 
       if (objectivesError) throw objectivesError;
-      setObjectives(objectivesData || []);
+      
+      // Ensure proper typing for contribution_type and status
+      const validObjectivesData = (objectivesData || []).map(objective => ({
+        ...objective,
+        contribution_type: objective.contribution_type as 'recurring' | 'one_time' | 'goal_based',
+        status: objective.status as 'active' | 'completed' | 'overdue'
+      })) as PoolObjective[];
+      
+      setObjectives(validObjectivesData);
 
     } catch (error) {
       console.error('Error loading pool data:', error);
@@ -515,7 +542,7 @@ ${discussions.slice(0, 5).map(d => `- **${d.title}** (${d.status}) - ${new Date(
                         <div>
                           <p className="font-medium">{discussion.title}</p>
                           <p className="text-sm text-muted-foreground">
-                            {discussion.creator?.full_name} • {new Date(discussion.created_at).toLocaleDateString()}
+                            {discussion.creator?.full_name || 'Unknown'} • {new Date(discussion.created_at).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
@@ -592,7 +619,7 @@ ${discussions.slice(0, 5).map(d => `- **${d.title}** (${d.status}) - ${new Date(
                           <div className="flex items-center space-x-4 text-sm">
                             <span className="flex items-center space-x-1">
                               <Users className="h-4 w-4" />
-                              <span>{discussion.creator?.full_name}</span>
+                              <span>{discussion.creator?.full_name || 'Unknown'}</span>
                             </span>
                             <span className="flex items-center space-x-1">
                               <Calendar className="h-4 w-4" />
@@ -660,7 +687,7 @@ ${discussions.slice(0, 5).map(d => `- **${d.title}** (${d.status}) - ${new Date(
                             </span>
                             <span className="flex items-center space-x-1">
                               <Users className="h-4 w-4" />
-                              <span>{investment.opportunity?.entrepreneur?.full_name}</span>
+                              <span>{investment.opportunity?.entrepreneur?.full_name || 'Unknown'}</span>
                             </span>
                             <span className="flex items-center space-x-1">
                               <Calendar className="h-4 w-4" />
@@ -842,12 +869,12 @@ ${discussions.slice(0, 5).map(d => `- **${d.title}** (${d.status}) - ${new Date(
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
                           <span className="text-white text-sm font-medium">
-                            {member.member?.full_name?.charAt(0) || member.member?.email.charAt(0)}
+                            {member.member?.full_name?.charAt(0) || 'U'}
                           </span>
                         </div>
                         <div>
-                          <p className="font-medium">{member.member?.full_name}</p>
-                          <p className="text-sm text-muted-foreground">{member.member?.email}</p>
+                          <p className="font-medium">{member.member?.full_name || 'Unknown Member'}</p>
+                          <p className="text-sm text-muted-foreground">{member.member?.role || 'No role'}</p>
                         </div>
                       </div>
                       
@@ -905,4 +932,4 @@ ${discussions.slice(0, 5).map(d => `- **${d.title}** (${d.status}) - ${new Date(
       </div>
     </AuthenticatedLayout>
   );
-} 
+}

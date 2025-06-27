@@ -61,7 +61,7 @@ export const MobileHeader = () => {
               <div className="flex flex-col items-center space-y-2">
                 <span className="text-slate-300 text-sm">Currency</span>
                 <CurrencySelector
-                  variant="default"
+                  variant="select"
                   showLabel={false}
                   className="text-white w-full"
                 />

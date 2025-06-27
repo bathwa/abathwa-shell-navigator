@@ -1,3 +1,4 @@
+
 {
   "name": "Abathwa Capital",
   "short_name": "Abathwa",
@@ -43,15 +44,14 @@
       "short_name": "Dashboard",
       "description": "Go to your dashboard",
       "url": "/dashboard",
-      "icons": [{ "src": "/logo.svg", "sizes": "96x96" }]
+      "icons": [{ "src": "/logo-192.png", "sizes": "96x96" }]
     },
     {
       "name": "Create Opportunity",
       "short_name": "Create",
       "description": "Create a new investment opportunity",
       "url": "/entrepreneur/opportunities/new",
-      "icons": [{ "src": "/logo.svg", "sizes": "96x96" }]
+      "icons": [{ "src": "/logo-192.png", "sizes": "96x96" }]
     }
   ]
 }
-

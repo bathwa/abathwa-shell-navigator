@@ -32,6 +32,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/store/authStore';
 import { useNavigate } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileUserManagement } from '@/components/Layout/MobileUserManagement';
 
 interface User {
   id: string;
@@ -56,6 +58,7 @@ export default function UserManagement() {
   const { toast } = useToast();
   const { user: currentUser } = useAuthStore();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
@@ -154,7 +157,7 @@ export default function UserManagement() {
 
     // Role filter
     if (roleFilter !== 'all') {
-      filtered = filtered.filter(user => allRoles.includes(user.role));
+      filtered = filtered.filter(user => user.role === roleFilter);
     }
 
     // Status filter
@@ -393,6 +396,235 @@ export default function UserManagement() {
       setIsLoading(false);
     }
   };
+
+  if (isMobile) {
+    return (
+      <div className="container mx-auto p-4">
+        <MobileUserManagement
+          users={users}
+          filteredUsers={filteredUsers}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          roleFilter={roleFilter}
+          setRoleFilter={setRoleFilter}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          onEditUser={handleEditUser}
+          onAddUser={() => setIsAddDialogOpen(true)}
+          onDeleteUser={(user) => {
+            setSelectedUser(user);
+            setIsDeleteDialogOpen(true);
+          }}
+          onExportUsers={exportUsers}
+          isLoading={isLoading}
+        />
+        
+        {/* Edit User Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit User</DialogTitle>
+              <DialogDescription>
+                Update user information and role.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Full Name</label>
+                <Input
+                  value={editForm.full_name}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, full_name: e.target.value }))}
+                  placeholder="Enter full name"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Email</label>
+                <Input
+                  type="email"
+                  value={editForm.email}
+                  disabled
+                  className="bg-muted"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Role</label>
+                <Select value={editForm.role} onValueChange={(value: any) => setEditForm(prev => ({ ...prev, role: value }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="entrepreneur">Entrepreneur</SelectItem>
+                    <SelectItem value="investor">Investor</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    {currentUser?.role === 'super_admin' && (
+                      <SelectItem value="super_admin">Super Admin</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Phone</label>
+                <Input
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="Enter phone number"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Company</label>
+                <Input
+                  value={editForm.company}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, company: e.target.value }))}
+                  placeholder="Enter company name"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Location</label>
+                <Input
+                  value={editForm.location}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, location: e.target.value }))}
+                  placeholder="Enter location"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Bio</label>
+                <Input
+                  value={editForm.bio}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
+                  placeholder="Enter bio"
+                />
+              </div>
+              <div className="flex space-x-2">
+                <Button onClick={handleUpdateUser} className="flex-1">
+                  Update User
+                </Button>
+                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="flex-1">
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add User Dialog */}
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <></>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Add New User</DialogTitle>
+              <DialogDescription>
+                Create a new user account with specified role and details.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Full Name</label>
+                <Input
+                  value={addForm.full_name}
+                  onChange={(e) => setAddForm(prev => ({ ...prev, full_name: e.target.value }))}
+                  placeholder="Enter full name"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Email</label>
+                <Input
+                  type="email"
+                  value={addForm.email}
+                  onChange={(e) => setAddForm(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Role</label>
+                <Select value={addForm.role} onValueChange={(value: any) => setAddForm(prev => ({ ...prev, role: value }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="entrepreneur">Entrepreneur</SelectItem>
+                    <SelectItem value="investor">Investor</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    {currentUser?.role === 'super_admin' && (
+                      <SelectItem value="super_admin">Super Admin</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Phone</label>
+                <Input
+                  value={addForm.phone}
+                  onChange={(e) => setAddForm(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="Enter phone number"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Company</label>
+                <Input
+                  value={addForm.company}
+                  onChange={(e) => setAddForm(prev => ({ ...prev, company: e.target.value }))}
+                  placeholder="Enter company name"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Location</label>
+                <Input
+                  value={addForm.location}
+                  onChange={(e) => setAddForm(prev => ({ ...prev, location: e.target.value }))}
+                  placeholder="Enter location"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Bio</label>
+                <Input
+                  value={addForm.bio}
+                  onChange={(e) => setAddForm(prev => ({ ...prev, bio: e.target.value }))}
+                  placeholder="Enter bio"
+                />
+              </div>
+              <div className="flex space-x-2">
+                <Button onClick={handleAddUser} className="flex-1">
+                  Create User
+                </Button>
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="flex-1">
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete User Dialog */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete User</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete {selectedUser?.full_name || selectedUser?.email}? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex space-x-2">
+              <Button variant="destructive" onClick={handleDeleteUser} className="flex-1">
+                Delete User
+              </Button>
+              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} className="flex-1">
+                Cancel
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Button variant="outline" onClick={auditAndFixRoles} className="mt-4 w-full">
+          <Shield className="h-4 w-4 mr-2" />
+          Audit & Fix User Roles
+        </Button>
+
+        <Button variant="outline" onClick={loadUsers} className="mb-4 mt-2 w-full">Refresh Users</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
@@ -813,4 +1045,4 @@ export default function UserManagement() {
       <Button variant="outline" onClick={loadUsers} className="mb-4">Refresh Users</Button>
     </div>
   );
-} 
+}

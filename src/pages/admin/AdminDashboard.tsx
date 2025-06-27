@@ -119,6 +119,7 @@ export default function AdminDashboard() {
   const [currentTab, setCurrentTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -377,8 +378,20 @@ export default function AdminDashboard() {
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" data-testid="loading-spinner"></div>
             <p className="text-muted-foreground">Loading admin dashboard...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center" data-testid="error-message">
+            <p className="text-red-500">{error}</p>
           </div>
         </div>
       </div>
@@ -409,7 +422,7 @@ export default function AdminDashboard() {
 
         {/* System Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
+          <Card data-testid="total-users">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Users</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
@@ -422,7 +435,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card data-testid="total-opportunities">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Opportunities</CardTitle>
               <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -435,7 +448,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card data-testid="total-revenue">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -449,7 +462,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card data-testid="system-health">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">System Health</CardTitle>
               <Cpu className="h-4 w-4 text-muted-foreground" />
@@ -465,11 +478,11 @@ export default function AdminDashboard() {
 
         <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="payments">Payments</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="overview" data-testid="overview-tab">Overview</TabsTrigger>
+            <TabsTrigger value="opportunities" data-testid="opportunities-tab">Opportunities</TabsTrigger>
+            <TabsTrigger value="users" data-testid="users-tab">Users</TabsTrigger>
+            <TabsTrigger value="payments" data-testid="payments-tab">Payments</TabsTrigger>
+            <TabsTrigger value="analytics" data-testid="analytics-tab">Analytics</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}

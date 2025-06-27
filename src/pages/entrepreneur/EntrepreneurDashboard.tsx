@@ -197,7 +197,7 @@ export default function EntrepreneurDashboard() {
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" data-testid="loading-spinner"></div>
             <p className="text-muted-foreground">Loading dashboard...</p>
           </div>
         </div>
@@ -237,7 +237,7 @@ export default function EntrepreneurDashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
+          <Card data-testid="total-opportunities">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Opportunities</CardTitle>
               <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -250,7 +250,7 @@ export default function EntrepreneurDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card data-testid="published-opportunities">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Funding Sought</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -265,7 +265,7 @@ export default function EntrepreneurDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card data-testid="total-funding-sought">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Investors</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
@@ -278,7 +278,7 @@ export default function EntrepreneurDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card data-testid="average-roi">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Milestones Completed</CardTitle>
               <Target className="h-4 w-4 text-muted-foreground" />

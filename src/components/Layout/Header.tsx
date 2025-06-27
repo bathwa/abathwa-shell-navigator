@@ -23,10 +23,12 @@ export const Header = () => {
               variant="compact"
               showLabel={false}
               className="text-white"
+              data-testid="currency-selector"
             />
             <Link 
               to="/profile" 
               className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors"
+              data-testid="profile-link"
             >
               <User size={20} />
               <span>{user.user_metadata?.full_name || user.email?.split('@')[0]}</span>
@@ -34,6 +36,7 @@ export const Header = () => {
             <button
               onClick={handleSignOut}
               className="flex items-center space-x-2 text-slate-300 hover:text-red-400 transition-colors"
+              data-testid="logout-button"
             >
               <LogOut size={20} />
               <span>Logout</span>

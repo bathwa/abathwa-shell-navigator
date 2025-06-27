@@ -269,7 +269,7 @@ export default function InvestorDashboard() {
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" data-testid="loading-spinner"></div>
             <p className="text-muted-foreground">Loading dashboard...</p>
           </div>
         </div>
@@ -288,15 +288,15 @@ export default function InvestorDashboard() {
           </div>
           
           <div className="flex items-center space-x-2">
-            <Button onClick={() => navigate('/opportunities/list')}>
+            <Button onClick={() => navigate('/opportunities/list')} data-testid="browse-opportunities-btn">
               <Search className="h-4 w-4 mr-2" />
               Browse Opportunities
             </Button>
-            <Button variant="outline" onClick={() => navigate('/investor/portfolio')}>
+            <Button variant="outline" onClick={() => navigate('/investor/portfolio')} data-testid="portfolio-btn">
               <Wallet className="h-4 w-4 mr-2" />
               Portfolio
             </Button>
-            <Button variant="outline" onClick={() => navigate('/investor/payments')}>
+            <Button variant="outline" onClick={() => navigate('/investor/payments')} data-testid="payments-btn">
               <CreditCard className="h-4 w-4 mr-2" />
               Payments
             </Button>
@@ -305,7 +305,7 @@ export default function InvestorDashboard() {
 
         {/* Portfolio Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
+          <Card data-testid="portfolio-value">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -319,7 +319,7 @@ export default function InvestorDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card data-testid="total-invested">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Invested</CardTitle>
               <Wallet className="h-4 w-4 text-muted-foreground" />

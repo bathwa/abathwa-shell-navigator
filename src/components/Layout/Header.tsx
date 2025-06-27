@@ -11,14 +11,14 @@ export const Header = () => {
   }
 
   return (
-    <header className="bg-slate-900 border-b border-slate-700 px-6 py-4">
-      <div className="flex items-center justify-between max-w-7xl mx-auto">
-        <Link to="/" className="text-2xl font-bold text-emerald-500">
+    <header className="bg-slate-900 border-b border-slate-700 px-4 py-3 sm:px-6 sm:py-4 w-full">
+      <div className="flex items-center justify-between max-w-7xl mx-auto w-full">
+        <Link to="/" className="text-2xl font-bold text-emerald-500 whitespace-nowrap">
           Abathwa Capital
         </Link>
         
         {user && (
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <CurrencySelector
               variant="compact"
               showLabel={false}
@@ -31,15 +31,16 @@ export const Header = () => {
               data-testid="profile-link"
             >
               <User size={20} />
-              <span>{user.user_metadata?.full_name || user.email?.split('@')[0]}</span>
+              <span className="hidden xs:inline-block truncate max-w-[80px]">{user.user_metadata?.full_name || user.email?.split('@')[0]}</span>
             </Link>
             <button
               onClick={handleSignOut}
-              className="flex items-center space-x-2 text-slate-300 hover:text-red-400 transition-colors"
+              className="flex items-center space-x-2 text-slate-300 hover:text-red-400 transition-colors px-2 py-1 rounded-md whitespace-nowrap"
               data-testid="logout-button"
+              style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis' }}
             >
               <LogOut size={20} />
-              <span>Logout</span>
+              <span className="hidden xs:inline-block">Logout</span>
             </button>
           </div>
         )}

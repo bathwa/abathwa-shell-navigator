@@ -1,4 +1,3 @@
-
 import { Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 
@@ -23,7 +22,7 @@ export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) 
   }
 
   if (allowedRoles && user) {
-    const userRole = user.user_metadata?.role || 'entrepreneur';
+    const userRole = user.user_metadata?.role || user.role || 'entrepreneur';
     if (!allowedRoles.includes(userRole)) {
       return <Navigate to="/dashboard" replace />
     }

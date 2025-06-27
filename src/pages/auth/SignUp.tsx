@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import { Mail, Lock, User, UserPlus, Building2, TrendingUp, Shield } from 'lucide-react'
+import { Mail, Lock, User, UserPlus, Building2, TrendingUp, Shield, Briefcase, DollarSign, Settings } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useToast } from '@/hooks/use-toast'
 
@@ -65,21 +65,27 @@ const SignUp = () => {
     {
       value: 'entrepreneur',
       label: 'Entrepreneur',
-      description: 'Create and manage investment opportunities',
-      icon: Building2
+      description: 'Raise capital and manage your opportunities',
+      icon: Briefcase,
     },
     {
       value: 'investor',
       label: 'Investor',
-      description: 'Browse and invest in opportunities',
-      icon: TrendingUp
+      description: 'Discover and invest in vetted opportunities',
+      icon: DollarSign,
+    },
+    {
+      value: 'service_provider',
+      label: 'Service Provider',
+      description: 'Offer services to entrepreneurs and investors',
+      icon: Settings,
     },
     {
       value: 'admin',
       label: 'Admin',
-      description: 'System administration and oversight',
-      icon: Shield
-    }
+      description: 'Platform administration and oversight',
+      icon: Shield,
+    },
   ]
 
   return (

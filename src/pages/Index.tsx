@@ -1,4 +1,3 @@
-
 import { Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 
@@ -10,11 +9,14 @@ const Index = () => {
   }
 
   // Redirect authenticated users to their appropriate dashboard
-  switch (user?.role) {
+  const role = user?.role || user?.user_metadata?.role;
+  switch (role) {
     case 'entrepreneur':
       return <Navigate to="/entrepreneur/dashboard" replace />
     case 'investor':
       return <Navigate to="/investor/dashboard" replace />
+    case 'service_provider':
+      return <Navigate to="/service-provider/dashboard" replace />
     case 'admin':
       return <Navigate to="/admin/dashboard" replace />
     default:

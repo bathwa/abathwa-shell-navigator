@@ -207,36 +207,41 @@ export default function EntrepreneurDashboard() {
 
   return (
     <AuthenticatedLayout>
-      <div className="container mx-auto p-6 max-w-7xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-4">
+      <div className="container mx-auto p-4 max-w-2xl sm:max-w-3xl md:max-w-5xl lg:max-w-7xl flex flex-col items-center justify-center min-h-screen">
+        {/* Header Row */}
+        <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-center sm:text-left">Entrepreneur Dashboard</h1>
+          </div>
+          <div className="mt-2 sm:mt-0 flex justify-center sm:justify-end">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => navigate('/dashboard')}
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-2 text-slate-300 hover:text-white"
+              data-testid="back-button"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft size={20} />
               <span>Back to Dashboard</span>
             </Button>
-            <div>
-              <h1 className="text-3xl font-bold">Entrepreneur Dashboard</h1>
-              <p className="text-muted-foreground">Manage your investment opportunities and track performance</p>
-            </div>
           </div>
-          
-          <Button 
-            onClick={() => navigate('/entrepreneur/opportunities/new')}
-            className="flex items-center space-x-2"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Create Opportunity</span>
-          </Button>
         </div>
 
+        {/* Action Buttons Row (Scrollable on mobile) */}
+        {opportunities.length > 0 && (
+          <div className="w-full overflow-x-auto mb-4">
+            <div className="flex flex-nowrap gap-2 min-w-[220px]" style={{ WebkitOverflowScrolling: 'touch' }}>
+              {/* Example action buttons, replace with actual actions as needed */}
+              <Button className="flex-shrink-0">Action 1</Button>
+              <Button className="flex-shrink-0">Action 2</Button>
+              <Button className="flex-shrink-0">Action 3</Button>
+              {opportunities.length > 3 && <Button className="flex-shrink-0">More</Button>}
+            </div>
+          </div>
+        )}
+
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full mb-8">
           <Card data-testid="total-opportunities">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Opportunities</CardTitle>

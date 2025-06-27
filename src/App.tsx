@@ -27,6 +27,7 @@ import NotFound from "./pages/NotFound";
 import UserManagement from "./pages/admin/UserManagement";
 import InvestmentPools from "./pages/admin/InvestmentPools";
 import EscrowManagement from "./pages/admin/EscrowManagement";
+import ServiceProviderDashboard from './pages/service-provider/ServiceProviderDashboard';
 
 // Components
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -54,14 +55,16 @@ const App = () => {
   const getDashboardRoute = useMemo(() => {
     if (!user) return "/";
     
-    // Get role from user metadata or default to entrepreneur
-    const userRole = user.user_metadata?.role || 'entrepreneur';
+    // Get role from user metadata or profile
+    const userRole = user.user_metadata?.role || user.role || 'entrepreneur';
     
     switch (userRole) {
       case 'entrepreneur':
         return "/entrepreneur/dashboard";
       case 'investor':
         return "/investor/dashboard";
+      case 'service_provider':
+        return "/service-provider/dashboard";
       case 'admin':
       case 'super_admin':
         return "/admin/dashboard";
@@ -179,6 +182,13 @@ const App = () => {
               <Route path="/admin/opportunities/review-list" element={
                 <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
                   <OpportunityReviewList />
+                </ProtectedRoute>
+              } />
+
+              {/* Service Provider Routes */}
+              <Route path="/service-provider/dashboard" element={
+                <ProtectedRoute allowedRoles={['service_provider']}>
+                  <ServiceProviderDashboard />
                 </ProtectedRoute>
               } />
 

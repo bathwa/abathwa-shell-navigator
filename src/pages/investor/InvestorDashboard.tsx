@@ -35,7 +35,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Star,
-  Zap
+  Zap,
+  ArrowLeft
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -279,24 +280,38 @@ export default function InvestorDashboard() {
 
   return (
     <AuthenticatedLayout>
-      <div className="container mx-auto p-6 max-w-7xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">Investor Dashboard</h1>
-            <p className="text-muted-foreground">Discover opportunities and manage your investment portfolio</p>
+      <div className="container mx-auto p-4 max-w-2xl sm:max-w-3xl md:max-w-5xl lg:max-w-7xl flex flex-col items-center justify-center min-h-screen">
+        {/* Header Row */}
+        <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-center sm:text-left">Investor Dashboard</h1>
           </div>
-          
-          <div className="flex items-center space-x-2">
-            <Button onClick={() => navigate('/opportunities/list')} data-testid="browse-opportunities-btn">
+          <div className="mt-2 sm:mt-0 flex justify-center sm:justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center space-x-2 text-slate-300 hover:text-white"
+              data-testid="back-button"
+            >
+              <ArrowLeft size={20} />
+              <span>Back to Dashboard</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Action Buttons Row (Scrollable on mobile) */}
+        <div className="w-full overflow-x-auto mb-4">
+          <div className="flex flex-nowrap gap-2 min-w-[220px]" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <Button onClick={() => navigate('/opportunities/list')} data-testid="browse-opportunities-btn" className="flex-shrink-0">
               <Search className="h-4 w-4 mr-2" />
               Browse Opportunities
             </Button>
-            <Button variant="outline" onClick={() => navigate('/investor/portfolio')} data-testid="portfolio-btn">
+            <Button variant="outline" onClick={() => navigate('/investor/portfolio')} data-testid="portfolio-btn" className="flex-shrink-0">
               <Wallet className="h-4 w-4 mr-2" />
               Portfolio
             </Button>
-            <Button variant="outline" onClick={() => navigate('/investor/payments')} data-testid="payments-btn">
+            <Button variant="outline" onClick={() => navigate('/investor/payments')} data-testid="payments-btn" className="flex-shrink-0">
               <CreditCard className="h-4 w-4 mr-2" />
               Payments
             </Button>
@@ -304,7 +319,7 @@ export default function InvestorDashboard() {
         </div>
 
         {/* Portfolio Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full mb-8">
           <Card data-testid="portfolio-value">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>

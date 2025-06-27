@@ -38,7 +38,8 @@ import {
   Zap,
   Database,
   Cpu,
-  Network
+  Network,
+  ArrowLeft
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -400,28 +401,39 @@ export default function AdminDashboard() {
 
   return (
     <AuthenticatedLayout>
-      <div className="container mx-auto p-6 max-w-7xl">
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 space-y-4 lg:space-y-0">
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold">Admin Dashboard</h1>
-            <p className="text-muted-foreground">System administration and oversight</p>
+      <div className="container mx-auto p-4 max-w-2xl sm:max-w-3xl md:max-w-5xl lg:max-w-7xl flex flex-col items-center justify-center min-h-screen">
+        {/* Header Row */}
+        <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-center sm:text-left">Admin Dashboard</h1>
           </div>
-          
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
-            <Button variant="outline" onClick={() => navigate('/admin/opportunities/review-list')} className="w-full sm:w-auto">
-              <Eye className="h-4 w-4 mr-2" />
-              Review Opportunities
-            </Button>
-            <Button variant="outline" onClick={() => navigate('/admin/users')} className="w-full sm:w-auto">
-              <Users className="h-4 w-4 mr-2" />
-              Manage Users
+          <div className="mt-2 sm:mt-0 flex justify-center sm:justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center space-x-2 text-slate-300 hover:text-white"
+              data-testid="back-button"
+            >
+              <ArrowLeft size={20} />
+              <span>Back to Dashboard</span>
             </Button>
           </div>
         </div>
 
+        {/* Action Buttons Row (Scrollable on mobile) */}
+        <div className="w-full overflow-x-auto mb-4">
+          <div className="flex flex-nowrap gap-2 min-w-[220px]" style={{ WebkitOverflowScrolling: 'touch' }}>
+            {/* Example action buttons, replace with actual actions as needed */}
+            <Button className="flex-shrink-0">Action 1</Button>
+            <Button className="flex-shrink-0">Action 2</Button>
+            <Button className="flex-shrink-0">Action 3</Button>
+            <Button className="flex-shrink-0">More</Button>
+          </div>
+        </div>
+
         {/* System Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full mb-8">
           <Card data-testid="total-users">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Users</CardTitle>

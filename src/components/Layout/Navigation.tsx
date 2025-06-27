@@ -53,9 +53,9 @@ export const Navigation = () => {
   ]
 
   return (
-    <nav className="bg-slate-800 border-b border-slate-700 px-6 py-3" data-testid="mobile-menu">
-      <div className="flex items-center justify-between max-w-7xl mx-auto">
-        <div className="flex items-center space-x-6">
+    <nav className="bg-slate-800 border-b border-slate-700 px-4 py-3 sm:px-6 w-full" data-testid="mobile-menu">
+      <div className="flex items-center justify-between max-w-7xl mx-auto w-full">
+        <div className="flex items-center space-x-4 overflow-x-auto no-scrollbar">
           {/* Back button for non-home pages */}
           {location.pathname !== '/' && location.pathname !== '/entrepreneur/dashboard' && 
            location.pathname !== '/investor/dashboard' && location.pathname !== '/admin/dashboard' && (
@@ -104,14 +104,15 @@ export const Navigation = () => {
         {/* Mobile menu toggle */}
         {isMobile && (
           <button
-            className="md:hidden text-slate-300 hover:text-white"
+            className="md:hidden text-slate-300 hover:text-white ml-2"
             onClick={() => setMobileMenuOpen((v) => !v)}
             data-testid="mobile-menu-toggle"
+            style={{ zIndex: 20 }}
           >
             <Menu size={28} />
           </button>
         )}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 sm:space-x-4">
           <Link
             to="/profile"
             className="text-slate-300 hover:text-white transition-colors"
@@ -123,7 +124,7 @@ export const Navigation = () => {
       </div>
       {/* Mobile menu items */}
       {isMobile && mobileMenuOpen && (
-        <div className="md:hidden mt-2 space-y-2" data-testid="mobile-menu-items">
+        <div className="md:hidden mt-2 space-y-2 w-full bg-slate-900 rounded-lg shadow-lg p-2" data-testid="mobile-menu-items" style={{ maxWidth: '100vw', overflowX: 'auto' }}>
           {navItems.map((item) => {
             const isActive = location.pathname === item.to
             return (

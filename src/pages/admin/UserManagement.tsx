@@ -34,8 +34,8 @@ import { useAuthStore } from '@/store/authStore';
 interface User {
   id: string;
   full_name: string;
-  email: string;
-  role: 'super_admin' | 'admin' | 'entrepreneur' | 'investor';
+  email?: string;
+  role: 'super_admin' | 'admin' | 'entrepreneur' | 'investor' | 'service_provider';
   created_at: string;
   avatar_url?: string;
   profile_data_jsonb?: any;
@@ -103,16 +103,14 @@ export default function UserManagement() {
   const loadUsers = async () => {
     try {
       setIsLoading(true);
-
       const { data: usersData, error } = await supabase
         .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
+        .select('*');
       if (error) throw error;
-
-      setUsers(usersData || []);
-      calculateStats(usersData || []);
+      // Ensure each user has an email property (fallback to empty string)
+      const usersWithEmail = (usersData || []).map((u: any) => ({ ...u, email: u.email || '' }));
+      setUsers(usersWithEmail);
+      calculateStats(usersWithEmail);
     } catch (error) {
       console.error('Error loading users:', error);
       toast({
@@ -149,7 +147,7 @@ export default function UserManagement() {
     if (searchTerm) {
       filtered = filtered.filter(user =>
         user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -184,29 +182,25 @@ export default function UserManagement() {
 
   const handleUpdateUser = async () => {
     if (!selectedUser) return;
-
     try {
-      const { error } = await supabase
+      const updateObj: any = {
+        full_name: editForm.full_name,
+        role: editForm.role,
+        profile_data_jsonb: {
+          phone: editForm.phone,
+          company: editForm.company,
+          location: editForm.location,
+          bio: editForm.bio
+        }
+      };
+      await supabase
         .from('profiles')
-        .update({
-          full_name: editForm.full_name,
-          role: editForm.role,
-          profile_data_jsonb: {
-            phone: editForm.phone,
-            company: editForm.company,
-            location: editForm.location,
-            bio: editForm.bio
-          }
-        })
+        .update(updateObj)
         .eq('id', selectedUser.id);
-
-      if (error) throw error;
-
       toast({
         title: "Success",
         description: "User updated successfully.",
       });
-
       setIsEditDialogOpen(false);
       loadUsers();
     } catch (error) {
@@ -221,43 +215,36 @@ export default function UserManagement() {
 
   const handleAddUser = async () => {
     try {
-      // Create user in auth.users first
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: addForm.email,
-        password: 'temporary123', // User will need to change this
+        password: 'temporary123',
         email_confirm: true,
         user_metadata: {
           full_name: addForm.full_name,
           role: addForm.role
         }
       });
-
       if (authError) throw authError;
-
-      // Update profile with additional data
       if (authData.user) {
-        const { error: profileError } = await supabase
+        const updateObj: any = {
+          full_name: addForm.full_name,
+          role: addForm.role,
+          profile_data_jsonb: {
+            phone: addForm.phone,
+            company: addForm.company,
+            location: addForm.location,
+            bio: addForm.bio
+          }
+        };
+        await supabase
           .from('profiles')
-          .update({
-            full_name: addForm.full_name,
-            role: addForm.role,
-            profile_data_jsonb: {
-              phone: addForm.phone,
-              company: addForm.company,
-              location: addForm.location,
-              bio: addForm.bio
-            }
-          })
+          .update(updateObj)
           .eq('id', authData.user.id);
-
-        if (profileError) throw profileError;
       }
-
       toast({
         title: "Success",
         description: "User created successfully. They will receive an email to set their password.",
       });
-
       setIsAddDialogOpen(false);
       setAddForm({
         full_name: '',
@@ -334,7 +321,7 @@ export default function UserManagement() {
       ['Name', 'Email', 'Role', 'Company', 'Location', 'Created At', 'Status'],
       ...filteredUsers.map(user => [
         user.full_name || '',
-        user.email,
+        user.email || '',
         user.role,
         user.profile_data_jsonb?.company || '',
         user.profile_data_jsonb?.location || '',
@@ -357,7 +344,8 @@ export default function UserManagement() {
       super_admin: { variant: 'destructive' as const, label: 'Super Admin' },
       admin: { variant: 'default' as const, label: 'Admin' },
       entrepreneur: { variant: 'secondary' as const, label: 'Entrepreneur' },
-      investor: { variant: 'outline' as const, label: 'Investor' }
+      investor: { variant: 'outline' as const, label: 'Investor' },
+      service_provider: { variant: 'default' as const, label: 'Service Provider' }
     };
 
     const config = roleConfig[role as keyof typeof roleConfig] || roleConfig.entrepreneur;
@@ -369,6 +357,40 @@ export default function UserManagement() {
       return <Badge variant="destructive">Inactive</Badge>;
     }
     return <Badge variant="default">Active</Badge>;
+  };
+
+  const auditAndFixRoles = async () => {
+    try {
+      setIsLoading(true);
+      const { data: usersData, error } = await supabase
+        .from('profiles')
+        .select('*');
+      if (error) throw error;
+      let fixedCount = 0;
+      for (const user of usersData as User[]) {
+        let correctRole = user.role;
+        if (!['entrepreneur', 'investor', 'admin', 'super_admin', 'service_provider'].includes(user.role)) {
+          correctRole = 'entrepreneur';
+        }
+        if (user.role !== correctRole) {
+          await supabase.from('profiles').update({ role: correctRole }).eq('id', user.id);
+          fixedCount++;
+        }
+      }
+      toast({
+        title: 'Audit Complete',
+        description: `${fixedCount} user roles fixed.`,
+      });
+      loadUsers();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to audit/fix user roles.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -596,7 +618,7 @@ export default function UserManagement() {
                   <div className="flex items-center space-x-4">
                     <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
                       <span className="text-white font-medium">
-                        {user.full_name?.charAt(0) || user.email.charAt(0)}
+                        {user.full_name?.charAt(0) || user.email?.charAt(0)}
                       </span>
                     </div>
                     <div>
@@ -605,7 +627,7 @@ export default function UserManagement() {
                         {getRoleBadge(user.role)}
                         {getStatusBadge(user)}
                       </div>
-                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                      <p className="text-sm text-muted-foreground">{user.email || 'No Email'}</p>
                       <div className="flex items-center space-x-4 text-xs text-muted-foreground mt-1">
                         {user.profile_data_jsonb?.company && (
                           <span className="flex items-center space-x-1">
@@ -778,6 +800,11 @@ export default function UserManagement() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Button variant="outline" onClick={auditAndFixRoles}>
+        <Shield className="h-4 w-4 mr-2" />
+        Audit & Fix User Roles
+      </Button>
     </div>
   );
 } 

@@ -130,50 +130,92 @@ export default function AdminDashboard() {
     try {
       setIsLoading(true);
 
-      // Load opportunities
-      const { data: opportunitiesData, error: opportunitiesError } = await supabase
-        .from('opportunities')
-        .select(`
-          *,
-          entrepreneur:profiles!opportunities_entrepreneur_id_fkey(full_name, avatar_url, email)
-        `)
-        .order('created_at', { ascending: false });
+      // Load opportunities with error handling
+      let opportunitiesData = [];
+      try {
+        const { data, error } = await supabase
+          .from('opportunities')
+          .select(`
+            *,
+            entrepreneur:profiles!opportunities_entrepreneur_id_fkey(full_name, avatar_url, email)
+          `)
+          .order('created_at', { ascending: false });
 
-      if (opportunitiesError) throw opportunitiesError;
+        if (error) {
+          console.error('Error loading opportunities:', error);
+          toast({
+            title: "Warning",
+            description: "Failed to load opportunities data.",
+            variant: "destructive",
+          });
+        } else {
+          opportunitiesData = data || [];
+        }
+      } catch (error) {
+        console.error('Exception loading opportunities:', error);
+      }
 
-      setOpportunities(opportunitiesData || []);
+      setOpportunities(opportunitiesData);
 
-      // Load users
-      const { data: usersData, error: usersError } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Load users with error handling
+      let usersData = [];
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-      if (usersError) throw usersError;
+        if (error) {
+          console.error('Error loading users:', error);
+          toast({
+            title: "Warning",
+            description: "Failed to load users data.",
+            variant: "destructive",
+          });
+        } else {
+          usersData = data || [];
+        }
+      } catch (error) {
+        console.error('Exception loading users:', error);
+      }
 
-      setUsers(usersData || []);
+      setUsers(usersData);
 
-      // Load payments
-      const { data: paymentsData, error: paymentsError } = await supabase
-        .from('payments')
-        .select(`
-          *,
-          sender:profiles!payments_sender_id_fkey(full_name, avatar_url),
-          receiver:profiles!payments_receiver_id_fkey(full_name, avatar_url)
-        `)
-        .order('created_at', { ascending: false });
+      // Load payments with error handling
+      let paymentsData = [];
+      try {
+        const { data, error } = await supabase
+          .from('payments')
+          .select(`
+            *,
+            sender:profiles!payments_sender_id_fkey(full_name, avatar_url),
+            receiver:profiles!payments_receiver_id_fkey(full_name, avatar_url)
+          `)
+          .order('created_at', { ascending: false });
 
-      if (paymentsError) throw paymentsError;
+        if (error) {
+          console.error('Error loading payments:', error);
+          toast({
+            title: "Warning",
+            description: "Failed to load payments data.",
+            variant: "destructive",
+          });
+        } else {
+          paymentsData = data || [];
+        }
+      } catch (error) {
+        console.error('Exception loading payments:', error);
+      }
 
-      setPayments(paymentsData || []);
+      setPayments(paymentsData);
 
       // Calculate system stats
-      const totalUsers = usersData?.length || 0;
-      const totalOpportunities = opportunitiesData?.length || 0;
-      const totalPayments = paymentsData?.length || 0;
-      const pendingReviews = opportunitiesData?.filter(o => o.status === 'pending_review').length || 0;
-      const totalRevenue = paymentsData?.filter(p => p.status === 'completed')
-        .reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+      const totalUsers = usersData.length;
+      const totalOpportunities = opportunitiesData.length;
+      const totalPayments = paymentsData.length;
+      const pendingReviews = opportunitiesData.filter(o => o.status === 'pending_review').length;
+      const totalRevenue = paymentsData.filter(p => p.status === 'completed')
+        .reduce((sum, p) => sum + (p.amount || 0), 0);
 
       setSystemStats({
         totalUsers,
@@ -190,7 +232,7 @@ export default function AdminDashboard() {
       console.error('Error loading dashboard data:', error);
       toast({
         title: "Error",
-        description: "Failed to load dashboard data.",
+        description: "Failed to load dashboard data. Please refresh the page.",
         variant: "destructive",
       });
     } finally {
@@ -347,18 +389,18 @@ export default function AdminDashboard() {
     <AuthenticatedLayout>
       <div className="container mx-auto p-6 max-w-7xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 space-y-4 lg:space-y-0">
           <div>
-            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+            <h1 className="text-2xl lg:text-3xl font-bold">Admin Dashboard</h1>
             <p className="text-muted-foreground">System administration and oversight</p>
           </div>
           
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" onClick={() => navigate('/admin/opportunity-review')}>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+            <Button variant="outline" onClick={() => navigate('/admin/opportunity-review')} className="w-full sm:w-auto">
               <Eye className="h-4 w-4 mr-2" />
               Review Opportunities
             </Button>
-            <Button variant="outline" onClick={() => navigate('/admin/users')}>
+            <Button variant="outline" onClick={() => navigate('/admin/users')} className="w-full sm:w-auto">
               <Users className="h-4 w-4 mr-2" />
               Manage Users
             </Button>

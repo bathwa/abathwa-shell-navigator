@@ -99,5 +99,67 @@
 
   body {
     @apply bg-background text-foreground;
+    /* Prevent zoom on input focus on iOS */
+    -webkit-text-size-adjust: 100%;
+    /* Improve touch targets */
+    touch-action: manipulation;
+  }
+
+  /* PWA specific styles */
+  @media (display-mode: standalone) {
+    body {
+      /* Remove browser UI space in standalone mode */
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+  }
+
+  /* Mobile responsive improvements */
+  @media (max-width: 768px) {
+    /* Improve touch targets */
+    button, a, input, select, textarea {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    /* Better spacing for mobile */
+    .container {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+
+    /* Improve card layouts on mobile */
+    .card {
+      margin-bottom: 1rem;
+    }
+
+    /* Better table responsiveness */
+    table {
+      font-size: 0.875rem;
+    }
+
+    /* Improve form elements on mobile */
+    input, select, textarea {
+      font-size: 16px; /* Prevent zoom on iOS */
+    }
+  }
+
+  /* Tablet responsive improvements */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .container {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  /* High DPI displays */
+  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    /* Ensure crisp icons and images */
+    img, svg {
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+    }
   }
 }

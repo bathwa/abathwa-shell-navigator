@@ -15,15 +15,21 @@
       "type": "image/x-icon"
     },
     {
-      "src": "/placeholder.svg",
-      "sizes": "192x192",
+      "src": "/logo.svg",
+      "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/placeholder.svg",
+      "src": "/logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ],
@@ -37,14 +43,15 @@
       "short_name": "Dashboard",
       "description": "Go to your dashboard",
       "url": "/dashboard",
-      "icons": [{ "src": "/placeholder.svg", "sizes": "96x96" }]
+      "icons": [{ "src": "/logo.svg", "sizes": "96x96" }]
     },
     {
       "name": "Create Opportunity",
       "short_name": "Create",
       "description": "Create a new investment opportunity",
       "url": "/entrepreneur/opportunities/new",
-      "icons": [{ "src": "/placeholder.svg", "sizes": "96x96" }]
+      "icons": [{ "src": "/logo.svg", "sizes": "96x96" }]
     }
   ]
 }
+

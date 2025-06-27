@@ -44,6 +44,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/store/authStore';
 import { drbeService } from '@/services/drbeService';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface Opportunity {
   id: string;
@@ -99,6 +100,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuthStore();
+  const { formatCurrency } = useCurrency();
   
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -397,7 +399,7 @@ export default function AdminDashboard() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${systemStats.totalRevenue.toLocaleString()}</div>
+              <div className="text-2xl font-bold">{formatCurrency(systemStats.totalRevenue)}</div>
               <div className="flex items-center text-xs text-muted-foreground">
                 <ArrowRight className="h-3 w-3 mr-1" />
                 +{systemStats.monthlyGrowth}% this month
@@ -547,7 +549,7 @@ export default function AdminDashboard() {
                           <div className="flex items-center space-x-4 text-sm">
                             <span className="flex items-center space-x-1">
                               <DollarSign className="h-4 w-4" />
-                              <span>${opportunity.amount_sought?.toLocaleString()}</span>
+                              <span>{formatCurrency(opportunity.amount_sought)}</span>
                             </span>
                             <span className="flex items-center space-x-1">
                               <TrendingUp className="h-4 w-4" />
@@ -659,7 +661,7 @@ export default function AdminDashboard() {
                     <div key={payment.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="space-y-2">
                         <div className="flex items-center space-x-2">
-                          <h4 className="font-medium">${payment.amount?.toLocaleString()}</h4>
+                          <h4 className="font-medium">{formatCurrency(payment.amount)}</h4>
                           {getPaymentStatusBadge(payment.status)}
                           <Badge variant="outline">{payment.payment_type}</Badge>
                         </div>

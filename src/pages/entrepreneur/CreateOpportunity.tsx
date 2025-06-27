@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -55,6 +55,7 @@ export default function CreateOpportunity() {
   const { user } = useAuthStore();
   const { addOpportunity } = useDataStore();
   const { formatCurrency, selectedCurrency } = useCurrency();
+  const { id } = useParams();
   
   const [opportunityData, setOpportunityData] = useState<OpportunityData>({
     name: '',
@@ -90,6 +91,70 @@ export default function CreateOpportunity() {
   useEffect(() => {
     calculateCompletionProgress();
   }, [opportunityData]);
+
+  useEffect(() => {
+    // Load existing opportunity data if editing
+    if (id) {
+      loadExistingOpportunity();
+    }
+  }, [id, user]);
+
+  const loadExistingOpportunity = async () => {
+    if (!id || !user) return;
+
+    try {
+      setIsLoading(true);
+      
+      const { data: opportunity, error } = await supabase
+        .from('opportunities')
+        .select('*')
+        .eq('id', id)
+        .eq('entrepreneur_id', user.id)
+        .single();
+
+      if (error) throw error;
+
+      if (opportunity) {
+        // Convert database format to component format
+        const locationData = opportunity.location_data_jsonb as any;
+        const teamData = opportunity.team_data_jsonb as any;
+        const profitabilityData = opportunity.profitability_data_jsonb as any;
+        
+        setOpportunityData({
+          name: opportunity.name || '',
+          description: opportunity.description || '',
+          amountSought: opportunity.amount_sought || 0,
+          expectedRoi: opportunity.expected_roi || 0,
+          industry: opportunity.industry || '',
+          opportunityType: teamData?.opportunity_type || 'going_concern',
+          teamSize: locationData?.team_size || 1,
+          experienceYears: locationData?.experience_years || 0,
+          location: locationData?.location || '',
+          businessPlan: null, // Files would need separate handling
+          financialProjections: null,
+          teamResumes: null,
+          marketAnalysis: null,
+          milestones: teamData?.milestones || [],
+          dueDiligenceCompleted: profitabilityData?.due_diligence_completed || false,
+          riskAssessment: teamData?.risk_assessment || null
+        });
+
+        // Load AI insights if available
+        if (teamData?.aiInsights) {
+          setAiInsights(teamData.aiInsights);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading opportunity:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load opportunity data.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const calculateCompletionProgress = () => {
     const requiredFields = [
@@ -245,20 +310,36 @@ export default function CreateOpportunity() {
             target_date: m.targetDate,
             amount_allocated: m.amountAllocated,
             status: m.status
-          }))
+          })),
+          aiInsights: aiInsights
         },
         profitability_data_jsonb: {
           due_diligence_completed: opportunityData.dueDiligenceCompleted
         }
       };
 
-      const { error } = await supabase.from('opportunities').insert(opportunityPayload);
+      let error;
+      if (id) {
+        // Update existing opportunity
+        const { error: updateError } = await supabase
+          .from('opportunities')
+          .update(opportunityPayload)
+          .eq('id', id)
+          .eq('entrepreneur_id', user?.id);
+        error = updateError;
+      } else {
+        // Create new opportunity
+        const { error: insertError } = await supabase
+          .from('opportunities')
+          .insert(opportunityPayload);
+        error = insertError;
+      }
 
       if (error) throw error;
 
       toast({
-        title: "Draft saved",
-        description: "Your opportunity has been saved as a draft.",
+        title: id ? "Draft updated" : "Draft saved",
+        description: id ? "Your opportunity has been updated." : "Your opportunity has been saved as a draft.",
       });
 
       navigate('/entrepreneur/dashboard');
@@ -309,14 +390,30 @@ export default function CreateOpportunity() {
             target_date: m.targetDate,
             amount_allocated: m.amountAllocated,
             status: m.status
-          }))
+          })),
+          aiInsights: aiInsights
         },
         profitability_data_jsonb: {
           due_diligence_completed: opportunityData.dueDiligenceCompleted
         }
       };
 
-      const { error } = await supabase.from('opportunities').insert(opportunityPayload);
+      let error;
+      if (id) {
+        // Update existing opportunity
+        const { error: updateError } = await supabase
+          .from('opportunities')
+          .update(opportunityPayload)
+          .eq('id', id)
+          .eq('entrepreneur_id', user?.id);
+        error = updateError;
+      } else {
+        // Create new opportunity
+        const { error: insertError } = await supabase
+          .from('opportunities')
+          .insert(opportunityPayload);
+        error = insertError;
+      }
 
       if (error) throw error;
 
@@ -324,12 +421,12 @@ export default function CreateOpportunity() {
       await drbeService.processRules('opportunity_creation', {
         status: 'pending_review',
         due_diligence_completed: true,
-        opportunityId: user?.id
+        opportunityId: id || user?.id
       });
 
       toast({
-        title: "Opportunity published",
-        description: "Your opportunity has been submitted for review.",
+        title: id ? "Opportunity updated" : "Opportunity published",
+        description: id ? "Your opportunity has been updated and submitted for review." : "Your opportunity has been submitted for review.",
       });
 
       navigate('/entrepreneur/dashboard');

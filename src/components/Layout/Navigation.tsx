@@ -1,10 +1,10 @@
-import { Home, TrendingUp, Users, Settings, ArrowLeft, LogOut } from 'lucide-react'
+import { Home, TrendingUp, Users, Settings, ArrowLeft } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { Button } from '@/components/ui/button'
 
 export const Navigation = () => {
-  const { user, signOut } = useAuthStore()
+  const { user } = useAuthStore()
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -36,11 +36,6 @@ export const Navigation = () => {
   }
 
   const navItems = getNavItems()
-
-  const handleSignOut = async () => {
-    await signOut()
-    navigate('/')
-  }
 
   return (
     <nav className="bg-slate-800 border-b border-slate-700 px-6 py-3">
@@ -86,15 +81,6 @@ export const Navigation = () => {
           >
             Profile
           </Link>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleSignOut}
-            className="flex items-center space-x-2 text-slate-300 hover:text-white"
-          >
-            <LogOut size={20} />
-            <span>Sign Out</span>
-          </Button>
         </div>
       </div>
     </nav>

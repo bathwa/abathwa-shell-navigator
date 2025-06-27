@@ -34,6 +34,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/store/authStore';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface Opportunity {
   id: string;
@@ -63,6 +64,7 @@ export default function EntrepreneurDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuthStore();
+  const { formatCurrency } = useCurrency();
   
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
@@ -255,7 +257,7 @@ export default function EntrepreneurDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ${stats.totalFundingSought.toLocaleString()}
+                {formatCurrency(stats.totalFundingSought)}
               </div>
               <p className="text-xs text-muted-foreground">
                 Average ROI: {stats.averageRoi.toFixed(1)}%
@@ -408,7 +410,7 @@ export default function EntrepreneurDashboard() {
                               <div className="flex items-center space-x-4 text-sm">
                                 <span className="flex items-center space-x-1">
                                   <DollarSign className="h-4 w-4" />
-                                  <span>${opportunity.amount_sought?.toLocaleString()}</span>
+                                  <span>{formatCurrency(opportunity.amount_sought)}</span>
                                 </span>
                                 <span className="flex items-center space-x-1">
                                   <TrendingUp className="h-4 w-4" />
@@ -529,12 +531,12 @@ export default function EntrepreneurDashboard() {
                   <div className="space-y-4">
                     <div className="flex justify-between">
                       <span className="text-sm">Total Funding Sought</span>
-                      <span className="font-medium">${stats.totalFundingSought.toLocaleString()}</span>
+                      <span className="font-medium">{formatCurrency(stats.totalFundingSought)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm">Average Opportunity Size</span>
                       <span className="font-medium">
-                        ${opportunities.length > 0 ? (stats.totalFundingSought / opportunities.length).toLocaleString() : 0}
+                        {opportunities.length > 0 ? formatCurrency(stats.totalFundingSought / opportunities.length) : 0}
                       </span>
                     </div>
                     <div className="flex justify-between">

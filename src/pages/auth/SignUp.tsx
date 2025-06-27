@@ -1,7 +1,6 @@
-
 import { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import { Mail, Lock, User, UserPlus } from 'lucide-react'
+import { Mail, Lock, User, UserPlus, Building2, TrendingUp, Shield } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useToast } from '@/hooks/use-toast'
 
@@ -10,6 +9,7 @@ const SignUp = () => {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [fullName, setFullName] = useState('')
+  const [selectedRole, setSelectedRole] = useState('entrepreneur')
   const [loading, setLoading] = useState(false)
   const { signUp, isAuthenticated } = useAuthStore()
   const { toast } = useToast()
@@ -35,7 +35,7 @@ const SignUp = () => {
     try {
       const { error } = await signUp(email, password, { 
         full_name: fullName,
-        role: 'entrepreneur' // Default role
+        role: selectedRole
       })
       
       if (error) {
@@ -60,6 +60,27 @@ const SignUp = () => {
       setLoading(false)
     }
   }
+
+  const roles = [
+    {
+      value: 'entrepreneur',
+      label: 'Entrepreneur',
+      description: 'Create and manage investment opportunities',
+      icon: Building2
+    },
+    {
+      value: 'investor',
+      label: 'Investor',
+      description: 'Browse and invest in opportunities',
+      icon: TrendingUp
+    },
+    {
+      value: 'admin',
+      label: 'Admin',
+      description: 'System administration and oversight',
+      icon: Shield
+    }
+  ]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 flex items-center justify-center px-4">
@@ -104,6 +125,45 @@ const SignUp = () => {
                   placeholder="Enter your email"
                   required
                 />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-3">
+                Select Your Role
+              </label>
+              <div className="space-y-2">
+                {roles.map((role) => {
+                  const Icon = role.icon;
+                  return (
+                    <label
+                      key={role.value}
+                      className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
+                        selectedRole === role.value
+                          ? 'border-emerald-500 bg-emerald-500/10'
+                          : 'border-slate-600 bg-slate-700 hover:border-slate-500'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="role"
+                        value={role.value}
+                        checked={selectedRole === role.value}
+                        onChange={(e) => setSelectedRole(e.target.value)}
+                        className="sr-only"
+                      />
+                      <Icon className={`mr-3 ${selectedRole === role.value ? 'text-emerald-400' : 'text-slate-400'}`} size={20} />
+                      <div className="flex-1">
+                        <div className={`font-medium ${selectedRole === role.value ? 'text-emerald-400' : 'text-white'}`}>
+                          {role.label}
+                        </div>
+                        <div className="text-sm text-slate-400">
+                          {role.description}
+                        </div>
+                      </div>
+                    </label>
+                  );
+                })}
               </div>
             </div>
 

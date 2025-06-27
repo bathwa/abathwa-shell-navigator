@@ -40,6 +40,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/store/authStore';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface Opportunity {
   id: string;
@@ -82,6 +83,7 @@ export default function InvestorDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuthStore();
+  const { formatCurrency } = useCurrency();
   
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [investments, setInvestments] = useState<Investment[]>([]);
@@ -305,7 +307,7 @@ export default function InvestorDashboard() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${portfolioStats.portfolioValue.toLocaleString()}</div>
+              <div className="text-2xl font-bold">${formatCurrency(portfolioStats.portfolioValue)}</div>
               <div className="flex items-center text-xs text-muted-foreground">
                 <ArrowUpRight className="h-3 w-3 mr-1" />
                 +{portfolioStats.monthlyGrowth}% this month
@@ -319,7 +321,7 @@ export default function InvestorDashboard() {
               <Wallet className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${portfolioStats.totalInvested.toLocaleString()}</div>
+              <div className="text-2xl font-bold">${formatCurrency(portfolioStats.totalInvested)}</div>
               <p className="text-xs text-muted-foreground">
                 Across {portfolioStats.activeInvestments} investments
               </p>
@@ -332,7 +334,7 @@ export default function InvestorDashboard() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${portfolioStats.totalReturn.toLocaleString()}</div>
+              <div className="text-2xl font-bold">${formatCurrency(portfolioStats.totalReturn)}</div>
               <p className="text-xs text-muted-foreground">
                 Average ROI: {portfolioStats.averageRoi.toFixed(1)}%
               </p>
@@ -378,7 +380,7 @@ export default function InvestorDashboard() {
                       <div className="flex items-center space-x-3">
                         <div className="w-2 h-2 bg-primary rounded-full"></div>
                         <div>
-                          <p className="font-medium">${investment.amount?.toLocaleString()} investment</p>
+                          <p className="font-medium">${formatCurrency(investment.amount)} investment</p>
                           <p className="text-sm text-muted-foreground">
                             {investment.opportunity?.name} • {new Date(investment.created_at).toLocaleDateString()}
                           </p>
@@ -518,7 +520,7 @@ export default function InvestorDashboard() {
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <p className="text-muted-foreground">Amount Sought</p>
-                          <p className="font-semibold">${opportunity.amount_sought?.toLocaleString()}</p>
+                          <p className="font-semibold">${formatCurrency(opportunity.amount_sought)}</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">Expected ROI</p>
@@ -596,7 +598,7 @@ export default function InvestorDashboard() {
                             <div className="flex items-center space-x-4 text-sm">
                               <span className="flex items-center space-x-1">
                                 <DollarSign className="h-4 w-4" />
-                                <span>${investment.amount?.toLocaleString()}</span>
+                                <span>${formatCurrency(investment.amount)}</span>
                               </span>
                               <span className="flex items-center space-x-1">
                                 <TrendingUp className="h-4 w-4" />
@@ -629,7 +631,7 @@ export default function InvestorDashboard() {
                             </div>
                             <Progress value={75} />
                             <p className="text-xs text-muted-foreground">
-                              Expected return: ${(investment.amount * (investment.opportunity?.expected_roi || 0) / 100).toLocaleString()}
+                              Expected return: ${formatCurrency(investment.amount * (investment.opportunity?.expected_roi || 0) / 100)}
                             </p>
                           </div>
                         )}
@@ -676,7 +678,7 @@ export default function InvestorDashboard() {
                             <span className="text-sm">{investment.opportunity?.name}</span>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <span className="text-sm font-medium">${investment.amount?.toLocaleString()}</span>
+                            <span className="text-sm font-medium">${formatCurrency(investment.amount)}</span>
                             <span className="text-sm text-muted-foreground">({percentage.toFixed(1)}%)</span>
                           </div>
                         </div>
@@ -697,11 +699,11 @@ export default function InvestorDashboard() {
                   <div className="space-y-4">
                     <div className="flex justify-between">
                       <span className="text-sm">Total Portfolio Value</span>
-                      <span className="font-medium">${portfolioStats.portfolioValue.toLocaleString()}</span>
+                      <span className="font-medium">${formatCurrency(portfolioStats.portfolioValue)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm">Total Returns</span>
-                      <span className="font-medium text-green-600">+${portfolioStats.totalReturn.toLocaleString()}</span>
+                      <span className="font-medium text-green-600">+${formatCurrency(portfolioStats.totalReturn)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm">Average ROI</span>

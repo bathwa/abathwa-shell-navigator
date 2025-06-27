@@ -111,6 +111,11 @@ const App = () => {
                   <CreateOpportunity />
                 </ProtectedRoute>
               } />
+              <Route path="/entrepreneur/edit-opportunity/:id" element={
+                <ProtectedRoute allowedRoles={['entrepreneur']}>
+                  <CreateOpportunity />
+                </ProtectedRoute>
+              } />
 
               {/* Investor Routes */}
               <Route path="/investor/dashboard" element={

@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,6 +41,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signOut: async () => {
     await supabase.auth.signOut();
+    // Clear all state
+    set({
+      user: null,
+      session: null,
+      isAuthenticated: false,
+      loading: false
+    });
+    // Force redirect to login
+    window.location.href = '/login';
   },
 
   initialize: () => {

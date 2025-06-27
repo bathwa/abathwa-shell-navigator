@@ -1,242 +1,205 @@
+
 import { useState } from 'react'
-import { Link, Navigate } from 'react-router-dom'
-import { Mail, Lock, User, UserPlus, Building2, TrendingUp, Shield, Briefcase, DollarSign, Settings } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuthStore } from '@/store/authStore'
 import { useToast } from '@/hooks/use-toast'
+import { Building, TrendingUp, Users, User } from 'lucide-react'
 
 const SignUp = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
   const [fullName, setFullName] = useState('')
-  const [selectedRole, setSelectedRole] = useState('entrepreneur')
-  const [loading, setLoading] = useState(false)
-  const { signUp, isAuthenticated } = useAuthStore()
+  const [role, setRole] = useState<'entrepreneur' | 'investor' | 'service_provider'>('entrepreneur')
+  const [isLoading, setIsLoading] = useState(false)
+  const { signUp } = useAuthStore()
   const { toast } = useToast()
-
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />
-  }
+  const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (password !== confirmPassword) {
+    if (!email || !password || !fullName || !role) {
       toast({
         title: "Error",
-        description: "Passwords do not match",
+        description: "Please fill in all fields.",
         variant: "destructive",
       })
       return
     }
 
-    setLoading(true)
-
+    setIsLoading(true)
+    
     try {
-      const { error } = await signUp(email, password, { 
+      const { error } = await signUp(email, password, {
         full_name: fullName,
-        role: selectedRole
+        role: role
       })
-      
+
       if (error) {
         toast({
-          title: "Error",
+          title: "Sign Up Failed",
           description: error.message,
           variant: "destructive",
         })
       } else {
         toast({
-          title: "Success",
-          description: "Account created successfully! Please check your email for verification.",
+          title: "Success!",
+          description: "Account created successfully. Please check your email to confirm your account.",
         })
+        navigate('/login')
       }
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       })
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
-  const roles = [
-    {
-      value: 'entrepreneur',
-      label: 'Entrepreneur',
-      description: 'Raise capital and manage your opportunities',
-      icon: Briefcase,
-    },
-    {
-      value: 'investor',
-      label: 'Investor',
-      description: 'Discover and invest in vetted opportunities',
-      icon: DollarSign,
-    },
-    {
-      value: 'service_provider',
-      label: 'Service Provider',
-      description: 'Offer services to entrepreneurs and investors',
-      icon: Settings,
-    },
-    {
-      value: 'admin',
-      label: 'Admin',
-      description: 'Platform administration and oversight',
-      icon: Shield,
-    },
-  ]
+  const getRoleIcon = (roleType: string) => {
+    switch (roleType) {
+      case 'entrepreneur':
+        return <Building className="h-5 w-5" />
+      case 'investor':
+        return <TrendingUp className="h-5 w-5" />
+      case 'service_provider':
+        return <Users className="h-5 w-5" />
+      default:
+        return <User className="h-5 w-5" />
+    }
+  }
+
+  const getRoleDescription = (roleType: string) => {
+    switch (roleType) {
+      case 'entrepreneur':
+        return 'Raise funds for your business ventures'
+      case 'investor':
+        return 'Discover and invest in promising opportunities'
+      case 'service_provider':
+        return 'Offer professional services to entrepreneurs'
+      default:
+        return 'Select your role'
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 flex items-center justify-center px-4">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-white mb-2">Join Abathwa Capital</h1>
-          <p className="text-slate-300">Create your account to get started</p>
-        </div>
-
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-8 border border-slate-700">
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
+      <Card className="w-full max-w-lg">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">Create Your Account</CardTitle>
+          <CardDescription>
+            Join Abathwa Capital and start your investment journey
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-slate-300 mb-2">
-                Full Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
-                <input
-                  id="fullName"
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  placeholder="Enter your full name"
-                  required
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Full Name</Label>
+              <Input
+                id="fullName"
+                type="text"
+                placeholder="Enter your full name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+              />
             </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-3">
-                Select Your Role
-              </label>
-              <div className="space-y-2">
-                {roles.map((role) => {
-                  const Icon = role.icon;
-                  return (
-                    <label
-                      key={role.value}
-                      className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
-                        selectedRole === role.value
-                          ? 'border-emerald-500 bg-emerald-500/10'
-                          : 'border-slate-600 bg-slate-700 hover:border-slate-500'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="role"
-                        value={role.value}
-                        checked={selectedRole === role.value}
-                        onChange={(e) => setSelectedRole(e.target.value)}
-                        className="sr-only"
-                      />
-                      <Icon className={`mr-3 ${selectedRole === role.value ? 'text-emerald-400' : 'text-slate-400'}`} size={20} />
-                      <div className="flex-1">
-                        <div className={`font-medium ${selectedRole === role.value ? 'text-emerald-400' : 'text-white'}`}>
-                          {role.label}
-                        </div>
-                        <div className="text-sm text-slate-400">
-                          {role.description}
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Create a password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="role">I am a...</Label>
+              <Select value={role} onValueChange={(value: 'entrepreneur' | 'investor' | 'service_provider') => setRole(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="entrepreneur">
+                    <div className="flex items-center space-x-2">
+                      {getRoleIcon('entrepreneur')}
+                      <div>
+                        <div className="font-medium">Entrepreneur</div>
+                        <div className="text-xs text-muted-foreground">
+                          {getRoleDescription('entrepreneur')}
                         </div>
                       </div>
-                    </label>
-                  );
-                })}
-              </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="investor">
+                    <div className="flex items-center space-x-2">
+                      {getRoleIcon('investor')}
+                      <div>
+                        <div className="font-medium">Investor</div>
+                        <div className="text-xs text-muted-foreground">
+                          {getRoleDescription('investor')}
+                        </div>
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="service_provider">
+                    <div className="flex items-center space-x-2">
+                      {getRoleIcon('service_provider')}
+                      <div>
+                        <div className="font-medium">Service Provider</div>
+                        <div className="text-xs text-muted-foreground">
+                          {getRoleDescription('service_provider')}
+                        </div>
+                      </div>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  placeholder="Create a password"
-                  required
-                  minLength={6}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-300 mb-2">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  placeholder="Confirm your password"
-                  required
-                  minLength={6}
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-800 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={isLoading}
             >
-              {loading ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              ) : (
-                <>
-                  <UserPlus className="mr-2" size={20} />
-                  Create Account
-                </>
-              )}
-            </button>
+              {isLoading ? 'Creating Account...' : 'Create Account'}
+            </Button>
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-slate-400">
+            <p className="text-sm text-muted-foreground">
               Already have an account?{' '}
-              <Link to="/login" className="text-emerald-400 hover:text-emerald-300 font-medium">
-                Sign in here
+              <Link to="/login" className="text-emerald-500 hover:text-emerald-400 font-medium">
+                Sign in
               </Link>
             </p>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

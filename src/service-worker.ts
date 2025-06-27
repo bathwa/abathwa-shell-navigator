@@ -1,3 +1,4 @@
+
 /// <reference lib="webworker" />
 
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
@@ -197,15 +198,12 @@ const syncOfflineData = async () => {
         await processOfflineAction(item);
       } catch (error) {
         console.error('Error processing offline action:', error);
-        // Keep failed items in queue for retry
         continue;
       }
     }
     
-    // Clear successfully processed items
     await clearIndexedDB();
     
-    // Notify all clients about sync completion
     const clientList = await self.clients.matchAll();
     clientList.forEach(client => {
       client.postMessage({
@@ -270,22 +268,18 @@ self.addEventListener('message', async (event) => {
       timestamp: Date.now()
     };
     
-    // Add to memory queue
     offlineQueue.push(syncData);
-    
-    // Save to IndexedDB for persistence
     await saveToIndexedDB(syncData);
     
-    // Register for background sync
     try {
-      await self.registration.sync.register('background-sync');
+      if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+        await self.registration.sync.register('background-sync');
+      }
     } catch (error) {
       console.error('Background sync registration failed:', error);
-      // Fallback: try to sync immediately
       setTimeout(syncOfflineData, 1000);
     }
     
-    // Send confirmation back to client
     event.ports[0]?.postMessage({ success: true });
   }
 });
@@ -299,18 +293,7 @@ self.addEventListener('push', (event) => {
     body: data.body,
     icon: '/logo-192.png',
     badge: '/logo-192.png',
-    data: data.data || {},
-    actions: [
-      {
-        action: 'view',
-        title: 'View',
-        icon: '/logo-192.png'
-      },
-      {
-        action: 'dismiss',
-        title: 'Dismiss'
-      }
-    ]
+    data: data.data || {}
   };
   
   event.waitUntil(
@@ -329,43 +312,4 @@ self.addEventListener('notificationclick', (event) => {
   }
 });
 
-// Periodic background sync for data updates
-self.addEventListener('periodicsync', (event) => {
-  if (event.tag === 'update-data') {
-    event.waitUntil(updateCachedData());
-  }
-});
-
-const updateCachedData = async () => {
-  try {
-    // Update critical data in background
-    const endpoints = [
-      '/rest/v1/opportunities',
-      '/rest/v1/offers',
-      '/rest/v1/payments'
-    ];
-    
-    for (const endpoint of endpoints) {
-      try {
-        const response = await fetch(`https://bolzybkvyzhxbasgsofm.supabase.co${endpoint}`, {
-          headers: {
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJvbHp5Ymt2eXpoeGJhc2dzb2ZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5NDcwMzMsImV4cCI6MjA2NjUyMzAzM30.VqPb1P2-A79Tk9R8KLrqdfmoreCp8FKeGGb4ZxMef1o'
-          }
-        });
-        
-        if (response.ok) {
-          // Cache the updated data
-          const cache = await caches.open('supabase-api');
-          await cache.put(response.url, response.clone());
-        }
-      } catch (error) {
-        console.error(`Error updating ${endpoint}:`, error);
-      }
-    }
-  } catch (error) {
-    console.error('Error during periodic sync:', error);
-  }
-};
-
-// Export type for TypeScript
 export type { SyncData };

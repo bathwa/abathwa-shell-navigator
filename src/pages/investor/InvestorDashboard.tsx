@@ -1,186 +1,154 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AuthenticatedLayout } from '@/components/Layout/AuthenticatedLayout';
+import { useAuthStore } from '@/store/authStore';
+import { useDataStore } from '@/store/useDataStore';
+import { supabase } from '@/integrations/supabase/client';
 import { 
-  Search, 
   TrendingUp, 
   DollarSign, 
-  Users, 
-  Target, 
-  FileText, 
-  AlertTriangle, 
-  CheckCircle, 
-  Clock, 
-  Eye,
-  Heart,
-  Filter,
-  BarChart3,
-  PieChart,
+  PieChart, 
   Activity,
+  Eye,
   Calendar,
-  Building2,
-  Lightbulb,
-  Shield,
-  Wallet,
-  CreditCard,
-  ArrowUpRight,
-  ArrowDownRight,
+  Building,
   Star,
-  Zap,
-  ArrowLeft
+  ArrowUpRight,
+  ArrowDownRight
 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuthStore } from '@/store/authStore';
-import { useCurrency } from '@/contexts/CurrencyContext';
-
-interface Opportunity {
-  id: string;
-  name: string;
-  description: string;
-  amount_sought: number;
-  expected_roi: number;
-  industry: string;
-  status: 'draft' | 'pending_review' | 'published' | 'rejected' | 'funded';
-  created_at: string;
-  entrepreneur_id: string;
-  team_data_jsonb?: any;
-  location_data_jsonb?: any;
-  profitability_data_jsonb?: any;
-  entrepreneur?: {
-    full_name: string;
-    avatar_url?: string;
-  };
-}
 
 interface Investment {
   id: string;
-  opportunity_id: string;
   amount: number;
-  status: 'pending' | 'accepted' | 'rejected' | 'withdrawn';
+  opportunity: {
+    id: string;
+    name: string;
+    industry: string;
+    expected_roi: number;
+    status: string;
+  };
   created_at: string;
-  opportunity?: Opportunity;
+  status: string;
 }
 
-interface PortfolioStats {
+interface DashboardStats {
   totalInvested: number;
-  totalReturn: number;
   activeInvestments: number;
-  averageRoi: number;
+  totalReturns: number;
   portfolioValue: number;
-  monthlyGrowth: number;
+  roi: number;
+}
+
+interface RecentOpportunity {
+  id: string;
+  name: string;
+  industry: string;
+  amount_sought: number;
+  expected_roi: number;
+  status: string;
+  created_at: string;
+  entrepreneur: {
+    full_name: string;
+  };
 }
 
 export default function InvestorDashboard() {
-  const navigate = useNavigate();
-  const { toast } = useToast();
   const { user } = useAuthStore();
-  const { formatCurrency } = useCurrency();
-  
-  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const { opportunities, syncAllData } = useDataStore();
+  const navigate = useNavigate();
   const [investments, setInvestments] = useState<Investment[]>([]);
-  const [portfolioStats, setPortfolioStats] = useState<PortfolioStats>({
-    totalInvested: 0,
-    totalReturn: 0,
-    activeInvestments: 0,
-    averageRoi: 0,
-    portfolioValue: 0,
-    monthlyGrowth: 0
-  });
+  const [recentOpportunities, setRecentOpportunities] = useState<RecentOpportunity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentTab, setCurrentTab] = useState('overview');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [industryFilter, setIndustryFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('newest');
-
-  const industries = [
-    'all', 'Technology', 'Healthcare', 'Finance', 'Education', 'Retail', 'Manufacturing',
-    'Real Estate', 'Transportation', 'Energy', 'Agriculture', 'Entertainment'
-  ];
+  const [stats, setStats] = useState<DashboardStats>({
+    totalInvested: 0,
+    activeInvestments: 0,
+    totalReturns: 0,
+    portfolioValue: 0,
+    roi: 0
+  });
 
   useEffect(() => {
-    loadDashboardData();
-  }, [user]);
+    if (user) {
+      loadDashboardData();
+      syncAllData();
+    }
+  }, [user, syncAllData]);
 
   const loadDashboardData = async () => {
     if (!user) return;
-
+    
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-
-      // Load published opportunities
-      const { data: opportunitiesData, error: opportunitiesError } = await supabase
-        .from('opportunities')
-        .select(`
-          *,
-          entrepreneur:profiles!opportunities_entrepreneur_id_fkey(full_name, avatar_url)
-        `)
-        .eq('status', 'published')
-        .order('created_at', { ascending: false });
-
-      if (opportunitiesError) throw opportunitiesError;
-
-      setOpportunities(opportunitiesData || []);
-
-      // Load user's investments
-      const { data: investmentsData, error: investmentsError } = await supabase
+      // Load investor's offers (investments)
+      const { data: offersData, error: offersError } = await supabase
         .from('offers')
         .select(`
           *,
-          opportunity:opportunities!offers_opportunity_id_fkey(
-            *,
-            entrepreneur:profiles!opportunities_entrepreneur_id_fkey(full_name, avatar_url)
+          opportunity:opportunities(
+            id,
+            name,
+            industry,
+            expected_roi,
+            status
           )
         `)
         .eq('investor_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (investmentsError) throw investmentsError;
+      if (offersError) {
+        console.error('Error loading investments:', offersError);
+      } else {
+        const investmentsData = offersData?.map(offer => ({
+          id: offer.id,
+          amount: offer.amount,
+          opportunity: offer.opportunity,
+          created_at: offer.created_at,
+          status: offer.status
+        })) || [];
+        
+        setInvestments(investmentsData);
+        
+        // Calculate stats
+        const totalInvested = investmentsData.reduce((sum, inv) => sum + inv.amount, 0);
+        const activeInvestments = investmentsData.filter(inv => inv.status === 'accepted').length;
+        const portfolioValue = totalInvested * 1.15; // Mock portfolio growth
+        const totalReturns = portfolioValue - totalInvested;
+        const roi = totalInvested > 0 ? ((totalReturns / totalInvested) * 100) : 0;
 
-      setInvestments(investmentsData || []);
+        setStats({
+          totalInvested,
+          activeInvestments,
+          totalReturns,
+          portfolioValue,
+          roi
+        });
+      }
 
-      // Calculate portfolio stats
-      const totalInvested = investmentsData?.reduce((sum, inv) => sum + (inv.amount || 0), 0) || 0;
-      const activeInvestments = investmentsData?.filter(inv => inv.status === 'accepted').length || 0;
-      
-      // Calculate returns (simplified - in real app, this would be more complex)
-      const totalReturn = investmentsData?.reduce((sum, inv) => {
-        if (inv.status === 'accepted' && inv.opportunity) {
-          return sum + (inv.amount * (inv.opportunity.expected_roi / 100));
-        }
-        return sum;
-      }, 0) || 0;
+      // Load recent opportunities
+      const { data: opportunitiesData, error: opportunitiesError } = await supabase
+        .from('opportunities')
+        .select(`
+          *,
+          entrepreneur:profiles!opportunities_entrepreneur_id_fkey(
+            full_name
+          )
+        `)
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-      const averageRoi = activeInvestments > 0 
-        ? investmentsData?.filter(inv => inv.status === 'accepted')
-            .reduce((sum, inv) => sum + (inv.opportunity?.expected_roi || 0), 0) / activeInvestments 
-        : 0;
-
-      setPortfolioStats({
-        totalInvested,
-        totalReturn,
-        activeInvestments,
-        averageRoi,
-        portfolioValue: totalInvested + totalReturn,
-        monthlyGrowth: 5.2 // Mock data - would be calculated from historical data
-      });
+      if (opportunitiesError) {
+        console.error('Error loading opportunities:', opportunitiesError);
+      } else {
+        setRecentOpportunities(opportunitiesData || []);
+      }
 
     } catch (error) {
       console.error('Error loading dashboard data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load dashboard data.",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }
@@ -188,162 +156,86 @@ export default function InvestorDashboard() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      pending: { variant: 'secondary' as const, label: 'Pending' },
-      accepted: { variant: 'default' as const, label: 'Active' },
-      rejected: { variant: 'destructive' as const, label: 'Rejected' },
-      withdrawn: { variant: 'outline' as const, label: 'Withdrawn' }
+      'pending': { variant: 'secondary' as const, label: 'Pending' },
+      'accepted': { variant: 'default' as const, label: 'Accepted' },
+      'rejected': { variant: 'destructive' as const, label: 'Rejected' },
+      'published': { variant: 'default' as const, label: 'Published' },
+      'draft': { variant: 'secondary' as const, label: 'Draft' },
+      'under_review': { variant: 'outline' as const, label: 'Under Review' }
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const getRiskLevel = (opportunity: Opportunity) => {
-    const riskAssessment = opportunity.team_data_jsonb?.risk_assessment;
-    if (!riskAssessment) return { level: 'Unknown', color: 'secondary' as const };
-    
-    const risk = riskAssessment.overallRisk;
-    if (risk > 70) return { level: 'High', color: 'destructive' as const };
-    if (risk > 40) return { level: 'Medium', color: 'default' as const };
-    return { level: 'Low', color: 'secondary' as const };
-  };
-
-  const filteredOpportunities = opportunities.filter(opportunity => {
-    const matchesSearch = opportunity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         opportunity.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         opportunity.industry.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesIndustry = industryFilter === 'all' || opportunity.industry === industryFilter;
-    return matchesSearch && matchesIndustry;
-  });
-
-  const sortedOpportunities = [...filteredOpportunities].sort((a, b) => {
-    switch (sortBy) {
-      case 'newest':
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      case 'oldest':
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      case 'roi-high':
-        return b.expected_roi - a.expected_roi;
-      case 'roi-low':
-        return a.expected_roi - b.expected_roi;
-      case 'amount-high':
-        return b.amount_sought - a.amount_sought;
-      case 'amount-low':
-        return a.amount_sought - b.amount_sought;
-      default:
-        return 0;
-    }
-  });
-
-  const handleInvest = async (opportunityId: string, amount: number) => {
-    try {
-      const { error } = await supabase
-        .from('offers')
-        .insert({
-          opportunity_id: opportunityId,
-          investor_id: user?.id,
-          amount: amount,
-          status: 'pending'
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Investment submitted",
-        description: "Your investment offer has been submitted for review.",
-      });
-
-      // Reload data
-      loadDashboardData();
-    } catch (error) {
-      console.error('Error submitting investment:', error);
-      toast({
-        title: "Error",
-        description: "Failed to submit investment offer.",
-        variant: "destructive",
-      });
-    }
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
   };
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
+      <AuthenticatedLayout>
+        <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" data-testid="loading-spinner"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
             <p className="text-muted-foreground">Loading dashboard...</p>
           </div>
         </div>
-      </div>
+      </AuthenticatedLayout>
     );
   }
 
   return (
     <AuthenticatedLayout>
-      <div className="container mx-auto p-4 max-w-2xl sm:max-w-3xl md:max-w-5xl lg:max-w-7xl flex flex-col items-center justify-center min-h-screen">
-        {/* Header Row */}
-        <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-bold text-center sm:text-left">Investor Dashboard</h1>
+      <div className="container mx-auto p-6 max-w-7xl">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Investor Dashboard</h1>
+            <p className="text-muted-foreground">Track your investments and discover new opportunities</p>
           </div>
-          <div className="mt-2 sm:mt-0 flex justify-center sm:justify-end">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center space-x-2 text-slate-300 hover:text-white"
-              data-testid="back-button"
-            >
-              <ArrowLeft size={20} />
-              <span>Back to Dashboard</span>
-            </Button>
-          </div>
-        </div>
-
-        {/* Action Buttons Row (Scrollable on mobile) */}
-        <div className="w-full overflow-x-auto mb-4">
-          <div className="flex flex-nowrap gap-2 min-w-[220px]" style={{ WebkitOverflowScrolling: 'touch' }}>
-            <Button onClick={() => navigate('/opportunities/list')} data-testid="browse-opportunities-btn" className="flex-shrink-0">
-              <Search className="h-4 w-4 mr-2" />
+          <div className="flex space-x-3 mt-4 md:mt-0">
+            <Button onClick={() => navigate('/opportunities/list')}>
               Browse Opportunities
             </Button>
-            <Button variant="outline" onClick={() => navigate('/investor/portfolio')} data-testid="portfolio-btn" className="flex-shrink-0">
-              <Wallet className="h-4 w-4 mr-2" />
-              Portfolio
-            </Button>
-            <Button variant="outline" onClick={() => navigate('/investor/payments')} data-testid="payments-btn" className="flex-shrink-0">
-              <CreditCard className="h-4 w-4 mr-2" />
-              Payments
+            <Button variant="outline" onClick={() => navigate('/investor/portfolio')}>
+              View Portfolio
             </Button>
           </div>
         </div>
 
-        {/* Portfolio Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full mb-8">
-          <Card data-testid="portfolio-value">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Invested</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${formatCurrency(portfolioStats.portfolioValue)}</div>
-              <div className="flex items-center text-xs text-muted-foreground">
-                <ArrowUpRight className="h-3 w-3 mr-1" />
-                +{portfolioStats.monthlyGrowth}% this month
-              </div>
+              <div className="text-2xl font-bold">{formatCurrency(stats.totalInvested)}</div>
             </CardContent>
           </Card>
 
-          <Card data-testid="total-invested">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Invested</CardTitle>
-              <Wallet className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Active Investments</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${formatCurrency(portfolioStats.totalInvested)}</div>
-              <p className="text-xs text-muted-foreground">
-                Across {portfolioStats.activeInvestments} investments
-              </p>
+              <div className="text-2xl font-bold">{stats.activeInvestments}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>
+              <PieChart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatCurrency(stats.portfolioValue)}</div>
             </CardContent>
           </Card>
 
@@ -353,391 +245,136 @@ export default function InvestorDashboard() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${formatCurrency(portfolioStats.totalReturn)}</div>
-              <p className="text-xs text-muted-foreground">
-                Average ROI: {portfolioStats.averageRoi.toFixed(1)}%
-              </p>
+              <div className="text-2xl font-bold text-emerald-600">
+                {stats.totalReturns >= 0 ? '+' : ''}{formatCurrency(stats.totalReturns)}
+              </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Investments</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">ROI</CardTitle>
+              {stats.roi >= 0 ? (
+                <ArrowUpRight className="h-4 w-4 text-emerald-500" />
+              ) : (
+                <ArrowDownRight className="h-4 w-4 text-red-500" />
+              )}
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{portfolioStats.activeInvestments}</div>
-              <p className="text-xs text-muted-foreground">
-                Generating returns
-              </p>
+              <div className={`text-2xl font-bold ${stats.roi >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {stats.roi >= 0 ? '+' : ''}{stats.roi.toFixed(1)}%
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="opportunities">Discover</TabsTrigger>
-            <TabsTrigger value="portfolio">My Portfolio</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList>
-
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Recent Activity */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Activity className="h-5 w-5" />
-                    <span>Recent Activity</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {investments.slice(0, 5).map((investment) => (
-                    <div key={investment.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-2 h-2 bg-primary rounded-full"></div>
-                        <div>
-                          <p className="font-medium">${formatCurrency(investment.amount)} investment</p>
-                          <p className="text-sm text-muted-foreground">
-                            {investment.opportunity?.name} • {new Date(investment.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Recent Investments */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Investments</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {investments.slice(0, 5).map((investment) => (
+                  <div key={investment.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <h4 className="font-semibold">{investment.opportunity.name}</h4>
+                        {getStatusBadge(investment.status)}
                       </div>
-                      {getStatusBadge(investment.status)}
+                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                        <span className="flex items-center space-x-1">
+                          <DollarSign className="h-3 w-3" />
+                          <span>{formatCurrency(investment.amount)}</span>
+                        </span>
+                        <span className="flex items-center space-x-1">
+                          <Building className="h-3 w-3" />
+                          <span>{investment.opportunity.industry}</span>
+                        </span>
+                        <span className="flex items-center space-x-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>{new Date(investment.created_at).toLocaleDateString()}</span>
+                        </span>
+                      </div>
                     </div>
-                  ))}
-                  
-                  {investments.length === 0 && (
-                    <div className="text-center py-8">
-                      <Lightbulb className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">No investments yet</p>
-                      <Button 
-                        variant="outline" 
-                        className="mt-2"
-                        onClick={() => setCurrentTab('opportunities')}
-                      >
-                        Discover opportunities
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Portfolio Performance */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <BarChart3 className="h-5 w-5" />
-                    <span>Portfolio Performance</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Monthly Growth</span>
-                      <span className="text-green-600">+{portfolioStats.monthlyGrowth}%</span>
-                    </div>
-                    <Progress value={portfolioStats.monthlyGrowth} />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate(`/opportunities/${investment.opportunity.id}`)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
                   </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Average ROI</span>
-                      <span>{portfolioStats.averageRoi.toFixed(1)}%</span>
-                    </div>
-                    <Progress value={Math.min(portfolioStats.averageRoi, 100)} />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Investment Diversity</span>
-                      <span>{portfolioStats.activeInvestments} opportunities</span>
-                    </div>
-                    <Progress value={Math.min(portfolioStats.activeInvestments * 20, 100)} />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Opportunities Tab */}
-          <TabsContent value="opportunities" className="space-y-6">
-            {/* Search and Filters */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Search className="h-5 w-5" />
-                  <span>Discover Opportunities</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Search opportunities..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-                  <Select value={industryFilter} onValueChange={setIndustryFilter}>
-                    <SelectTrigger className="w-full md:w-48">
-                      <SelectValue placeholder="Industry" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {industries.map((industry) => (
-                        <SelectItem key={industry} value={industry}>
-                          {industry === 'all' ? 'All Industries' : industry}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-full md:w-48">
-                      <SelectValue placeholder="Sort by" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="newest">Newest First</SelectItem>
-                      <SelectItem value="oldest">Oldest First</SelectItem>
-                      <SelectItem value="roi-high">Highest ROI</SelectItem>
-                      <SelectItem value="roi-low">Lowest ROI</SelectItem>
-                      <SelectItem value="amount-high">Highest Amount</SelectItem>
-                      <SelectItem value="amount-low">Lowest Amount</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Opportunities Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sortedOpportunities.map((opportunity) => {
-                const riskLevel = getRiskLevel(opportunity);
-                return (
-                  <Card key={opportunity.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-2">
-                          <CardTitle className="text-lg">{opportunity.name}</CardTitle>
-                          <div className="flex items-center space-x-2">
-                            <Badge variant="outline">{opportunity.industry}</Badge>
-                            <Badge variant={riskLevel.color}>{riskLevel.level} Risk</Badge>
-                          </div>
-                        </div>
-                        <Button variant="ghost" size="sm">
-                          <Heart className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <p className="text-sm text-muted-foreground line-clamp-3">
-                        {opportunity.description}
-                      </p>
-                      
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-muted-foreground">Amount Sought</p>
-                          <p className="font-semibold">${formatCurrency(opportunity.amount_sought)}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Expected ROI</p>
-                          <p className="font-semibold text-green-600">{opportunity.expected_roi}%</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>By {opportunity.entrepreneur?.full_name || 'Anonymous'}</span>
-                        <span>{new Date(opportunity.created_at).toLocaleDateString()}</span>
-                      </div>
-
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => navigate(`/opportunities/${opportunity.id}`)}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => handleInvest(opportunity.id, opportunity.amount_sought * 0.1)}
-                        >
-                          <Zap className="h-4 w-4 mr-2" />
-                          Invest
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-
-            {sortedOpportunities.length === 0 && (
-              <Card>
-                <CardContent className="text-center py-12">
-                  <Search className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No opportunities found</h3>
-                  <p className="text-muted-foreground">
-                    Try adjusting your search criteria or filters
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          {/* Portfolio Tab */}
-          <TabsContent value="portfolio" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Wallet className="h-5 w-5" />
-                  <span>My Investment Portfolio</span>
-                </CardTitle>
-                <CardDescription>
-                  Track your investments and their performance
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {investments.length > 0 ? (
-                  <div className="space-y-4">
-                    {investments.map((investment) => (
-                      <div key={investment.id} className="border rounded-lg p-6 space-y-4">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                              <h3 className="text-lg font-semibold">{investment.opportunity?.name}</h3>
-                              {getStatusBadge(investment.status)}
-                            </div>
-                            <p className="text-muted-foreground">{investment.opportunity?.description}</p>
-                            <div className="flex items-center space-x-4 text-sm">
-                              <span className="flex items-center space-x-1">
-                                <DollarSign className="h-4 w-4" />
-                                <span>${formatCurrency(investment.amount)}</span>
-                              </span>
-                              <span className="flex items-center space-x-1">
-                                <TrendingUp className="h-4 w-4" />
-                                <span>{investment.opportunity?.expected_roi}% ROI</span>
-                              </span>
-                              <span className="flex items-center space-x-1">
-                                <Calendar className="h-4 w-4" />
-                                <span>{new Date(investment.created_at).toLocaleDateString()}</span>
-                              </span>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate(`/opportunities/${investment.opportunity_id}`)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-
-                        {/* Investment Progress */}
-                        {investment.status === 'accepted' && (
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span>Investment Progress</span>
-                              <span>Active</span>
-                            </div>
-                            <Progress value={75} />
-                            <p className="text-xs text-muted-foreground">
-                              Expected return: ${formatCurrency(investment.amount * (investment.opportunity?.expected_roi || 0) / 100)}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Wallet className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No investments yet</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Start building your portfolio by investing in opportunities
-                    </p>
-                    <Button onClick={() => setCurrentTab('opportunities')}>
-                      Discover Opportunities
+                ))}
+                
+                {investments.length === 0 && (
+                  <div className="text-center py-8">
+                    <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-muted-foreground">No investments yet</p>
+                    <Button 
+                      className="mt-3" 
+                      onClick={() => navigate('/opportunities/list')}
+                    >
+                      Browse Opportunities
                     </Button>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Analytics Tab */}
-          <TabsContent value="analytics" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <PieChart className="h-5 w-5" />
-                    <span>Investment Distribution</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {investments.filter(inv => inv.status === 'accepted').map((investment) => {
-                      const percentage = portfolioStats.totalInvested > 0 
-                        ? (investment.amount / portfolioStats.totalInvested) * 100 
-                        : 0;
-                      
-                      return (
-                        <div key={investment.id} className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <div className="w-3 h-3 rounded-full bg-primary"></div>
-                            <span className="text-sm">{investment.opportunity?.name}</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm font-medium">${formatCurrency(investment.amount)}</span>
-                            <span className="text-sm text-muted-foreground">({percentage.toFixed(1)}%)</span>
-                          </div>
-                        </div>
-                      );
-                    })}
+          {/* Recent Opportunities */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Latest Investment Opportunities</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {recentOpportunities.map((opportunity) => (
+                  <div key={opportunity.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <h4 className="font-semibold">{opportunity.name}</h4>
+                        {getStatusBadge(opportunity.status)}
+                      </div>
+                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                        <span className="flex items-center space-x-1">
+                          <DollarSign className="h-3 w-3" />
+                          <span>{formatCurrency(opportunity.amount_sought)}</span>
+                        </span>
+                        <span className="flex items-center space-x-1">
+                          <Star className="h-3 w-3" />
+                          <span>{opportunity.expected_roi}% ROI</span>
+                        </span>
+                        <span className="flex items-center space-x-1">
+                          <Building className="h-3 w-3" />
+                          <span>{opportunity.industry}</span>
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        By {opportunity.entrepreneur.full_name}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => navigate(`/opportunities/${opportunity.id}`)}
+                    >
+                      View
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <TrendingUp className="h-5 w-5" />
-                    <span>Performance Metrics</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between">
-                      <span className="text-sm">Total Portfolio Value</span>
-                      <span className="font-medium">${formatCurrency(portfolioStats.portfolioValue)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">Total Returns</span>
-                      <span className="font-medium text-green-600">+${formatCurrency(portfolioStats.totalReturn)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">Average ROI</span>
-                      <span className="font-medium">{portfolioStats.averageRoi.toFixed(1)}%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">Monthly Growth</span>
-                      <span className="font-medium text-green-600">+{portfolioStats.monthlyGrowth}%</span>
-                    </div>
+                ))}
+                
+                {recentOpportunities.length === 0 && (
+                  <div className="text-center py-8">
+                    <Building className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-muted-foreground">No opportunities available</p>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </AuthenticatedLayout>
   );

@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { db, Profile, Opportunity, Offer, Payment, Milestone, Agreement, ServiceProvider, ServiceRequest, Remark, RatingReview, Announcement, InvestmentPool, PoolDiscussion, PoolObjective, PoolReport, PoolInvestment } from '../data/db';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,11 +11,29 @@ type MilestoneStatus = Database['public']['Enums']['milestone_status'];
 type AgreementStatus = Database['public']['Enums']['agreement_status'];
 type ServiceRequestStatus = Database['public']['Enums']['service_request_status'];
 
-// Define the insert types based on Supabase schema
 type OfferInsert = Database['public']['Tables']['offers']['Insert'];
 type PaymentInsert = Database['public']['Tables']['payments']['Insert'];
 type MilestoneInsert = Database['public']['Tables']['milestones']['Insert'];
 type AgreementInsert = Database['public']['Tables']['agreements']['Insert'];
+
+const validTableNames = [
+  'profiles',
+  'opportunities', 
+  'offers',
+  'payments',
+  'milestones',
+  'agreements',
+  'service_providers',
+  'service_requests',
+  'remarks',
+  'ratings_reviews',
+  'announcements',
+  'investment_pools',
+  'pool_discussions',
+  'pool_objectives',
+  'pool_reports',
+  'pool_investments'
+];
 
 interface DataState {
   profiles: Profile[];
@@ -66,19 +85,21 @@ export const useDataStore = create<DataState>((set, get) => ({
   lastSync: null,
 
   fetchData: async (table) => {
+    if (!validTableNames.includes(table)) {
+      console.warn(`Invalid table name: ${table}`);
+      return;
+    }
+    
     set({ loading: true });
     try {
-      // 1. Try to load from IndexedDB first for offline-first experience
       const cachedData = await db.table(table).toArray();
       if (cachedData.length > 0) {
         set({ [table]: cachedData });
       }
 
-      // 2. Fetch from Supabase (always try to sync latest)
-      const { data, error } = await supabase.from(table).select('*');
+      const { data, error } = await supabase.from(table as any).select('*');
       if (error) throw error;
 
-      // 3. Update IndexedDB and Zustand store with latest data
       if (data) {
         await db.table(table).clear();
         await db.table(table).bulkAdd(data);
@@ -92,22 +113,28 @@ export const useDataStore = create<DataState>((set, get) => ({
   },
 
   syncAllData: async () => {
-    await get().fetchData('profiles');
-    await get().fetchData('opportunities');
-    await get().fetchData('offers');
-    await get().fetchData('payments');
-    await get().fetchData('milestones');
-    await get().fetchData('agreements');
-    await get().fetchData('service_providers');
-    await get().fetchData('service_requests');
-    await get().fetchData('remarks');
-    await get().fetchData('ratings_reviews');
-    await get().fetchData('announcements');
-    await get().fetchData('investment_pools');
-    await get().fetchData('pool_discussions');
-    await get().fetchData('pool_objectives');
-    await get().fetchData('pool_reports');
-    await get().fetchData('pool_investments');
+    const tables = [
+      'profiles',
+      'opportunities',
+      'offers',
+      'payments',
+      'milestones',
+      'agreements',
+      'service_providers',
+      'service_requests',
+      'remarks',
+      'ratings_reviews',
+      'announcements',
+      'investment_pools',
+      'pool_discussions',
+      'pool_objectives',
+      'pool_reports',
+      'pool_investments'
+    ];
+
+    for (const table of tables) {
+      await get().fetchData(table);
+    }
   },
 
   addOpportunity: async (opportunityData) => {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,6 +48,7 @@ interface UserStats {
   totalUsers: number;
   entrepreneurs: number;
   investors: number;
+  serviceProviders: number;
   admins: number;
   activeUsers: number;
   newUsersThisMonth: number;
@@ -70,6 +70,7 @@ export default function UserManagement() {
     totalUsers: 0,
     entrepreneurs: 0,
     investors: 0,
+    serviceProviders: 0,
     admins: 0,
     activeUsers: 0,
     newUsersThisMonth: 0
@@ -135,8 +136,9 @@ export default function UserManagement() {
       totalUsers: userData.length,
       entrepreneurs: userData.filter(u => u.role === 'entrepreneur').length,
       investors: userData.filter(u => u.role === 'investor').length,
+      serviceProviders: userData.filter(u => u.role === 'service_provider').length,
       admins: userData.filter(u => u.role === 'admin' || u.role === 'super_admin').length,
-      activeUsers: userData.length, // For now, assume all users are active
+      activeUsers: userData.length,
       newUsersThisMonth: userData.filter(u => new Date(u.created_at) >= thisMonth).length
     };
 
@@ -162,9 +164,11 @@ export default function UserManagement() {
 
   const handleCreateUser = async () => {
     try {
-      // For now, we can only create profile records
-      // In a real app, you'd create the auth user first
+      // Generate a UUID for the new user
+      const userId = crypto.randomUUID();
+      
       const profileData = {
+        id: userId,
         full_name: newUser.full_name,
         role: newUser.role,
         profile_data_jsonb: newUser.profile_data,
@@ -220,7 +224,7 @@ export default function UserManagement() {
 
       toast({
         title: "Success",
-        description: "User updated successfully.",
+        description: "User updated successfully. Changes will take effect on next login.",
       });
 
       setIsEditDialogOpen(false);
@@ -287,7 +291,8 @@ export default function UserManagement() {
       super_admin: { variant: 'destructive' as const, label: 'Super Admin' },
       admin: { variant: 'secondary' as const, label: 'Admin' },
       entrepreneur: { variant: 'default' as const, label: 'Entrepreneur' },
-      investor: { variant: 'outline' as const, label: 'Investor' }
+      investor: { variant: 'outline' as const, label: 'Investor' },
+      service_provider: { variant: 'default' as const, label: 'Service Provider' }
     };
 
     const config = roleConfig[role] || roleConfig.entrepreneur;
@@ -297,12 +302,10 @@ export default function UserManagement() {
   const canManageUser = (targetUser: User) => {
     if (!currentUser) return false;
     
-    // Super admins can manage everyone
     if (currentUser.role === 'super_admin') return true;
     
-    // Admins can manage entrepreneurs and investors
     if (currentUser.role === 'admin') {
-      return targetUser.role === 'entrepreneur' || targetUser.role === 'investor';
+      return targetUser.role === 'entrepreneur' || targetUser.role === 'investor' || targetUser.role === 'service_provider';
     }
     
     return false;
@@ -345,7 +348,7 @@ export default function UserManagement() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.entrepreneurs}</div>
             <p className="text-xs text-muted-foreground">
-              {Math.round((stats.entrepreneurs / stats.totalUsers) * 100)}% of users
+              {stats.totalUsers > 0 ? Math.round((stats.entrepreneurs / stats.totalUsers) * 100) : 0}% of users
             </p>
           </CardContent>
         </Card>
@@ -358,7 +361,20 @@ export default function UserManagement() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.investors}</div>
             <p className="text-xs text-muted-foreground">
-              {Math.round((stats.investors / stats.totalUsers) * 100)}% of users
+              {stats.totalUsers > 0 ? Math.round((stats.investors / stats.totalUsers) * 100) : 0}% of users
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Service Providers</CardTitle>
+            <Shield className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.serviceProviders}</div>
+            <p className="text-xs text-muted-foreground">
+              Professional services
             </p>
           </CardContent>
         </Card>
@@ -372,19 +388,6 @@ export default function UserManagement() {
             <div className="text-2xl font-bold">{stats.admins}</div>
             <p className="text-xs text-muted-foreground">
               System administrators
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.activeUsers}</div>
-            <p className="text-xs text-muted-foreground">
-              Currently active
             </p>
           </CardContent>
         </Card>
@@ -432,6 +435,7 @@ export default function UserManagement() {
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="entrepreneur">Entrepreneur</SelectItem>
                 <SelectItem value="investor">Investor</SelectItem>
+                <SelectItem value="service_provider">Service Provider</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -482,7 +486,6 @@ export default function UserManagement() {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        // Navigate to user profile or show details
                         console.log('View user:', user);
                       }}
                     >
@@ -563,6 +566,7 @@ export default function UserManagement() {
                 <SelectContent>
                   <SelectItem value="entrepreneur">Entrepreneur</SelectItem>
                   <SelectItem value="investor">Investor</SelectItem>
+                  <SelectItem value="service_provider">Service Provider</SelectItem>
                   {currentUser?.role === 'super_admin' && (
                     <>
                       <SelectItem value="admin">Admin</SelectItem>
@@ -612,6 +616,7 @@ export default function UserManagement() {
                   <SelectContent>
                     <SelectItem value="entrepreneur">Entrepreneur</SelectItem>
                     <SelectItem value="investor">Investor</SelectItem>
+                    <SelectItem value="service_provider">Service Provider</SelectItem>
                     {currentUser?.role === 'super_admin' && (
                       <>
                         <SelectItem value="admin">Admin</SelectItem>

@@ -334,7 +334,7 @@ export default function EntrepreneurDashboard() {
                       <Button 
                         variant="outline" 
                         className="mt-2"
-                        onClick={() => navigate('/entrepreneur/create-opportunity')}
+                        onClick={() => navigate('/entrepreneur/opportunities/new')}
                       >
                         Create your first opportunity
                       </Button>
@@ -478,7 +478,7 @@ export default function EntrepreneurDashboard() {
                     <p className="text-muted-foreground mb-4">
                       Create your first investment opportunity to get started
                     </p>
-                    <Button onClick={() => navigate('/entrepreneur/create-opportunity')}>
+                    <Button onClick={() => navigate('/entrepreneur/opportunities/new')}>
                       Create Opportunity
                     </Button>
                   </div>

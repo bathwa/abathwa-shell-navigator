@@ -10,35 +10,48 @@ import { AuthenticatedLayout } from '@/components/Layout/AuthenticatedLayout';
 import { 
   Search, 
   Filter, 
+  Building2, 
   TrendingUp, 
   Calendar, 
+  User, 
   MapPin,
-  Building2,
-  Eye
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import type { Database } from '@/integrations/supabase/types';
+
+type OpportunityStatus = Database['public']['Enums']['opportunity_status'];
 
 interface Opportunity {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   amount_sought: number;
-  expected_roi: number;
-  industry: string;
-  status: 'published' | 'funded';
-  created_at: string;
-  location: string;
-  entrepreneur_name: string;
+  expected_roi: number | null;
+  industry: string | null;
+  status: OpportunityStatus;
+  created_at: string | null;
+  entrepreneur_id: string;
+  location_data_jsonb?: any;
+  entrepreneur?: {
+    full_name: string | null;
+    avatar_url?: string | null;
+  };
 }
 
 export default function OpportunitiesList() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [filteredOpportunities, setFilteredOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [industryFilter, setIndustryFilter] = useState('');
   const [roiFilter, setRoiFilter] = useState('');
   const navigate = useNavigate();
   const { formatCurrency } = useCurrency();
+  const { toast } = useToast();
 
   useEffect(() => {
     loadOpportunities();
@@ -51,61 +64,43 @@ export default function OpportunitiesList() {
   const loadOpportunities = async () => {
     try {
       setLoading(true);
-      // Mock data - replace with actual API call
-      const mockOpportunities: Opportunity[] = [
-        {
-          id: '1',
-          name: 'Tech Startup Alpha',
-          description: 'Innovative AI-powered solution for enterprise automation',
-          amount_sought: 500000,
-          expected_roi: 25,
-          industry: 'Technology',
-          status: 'published',
-          created_at: '2024-03-01',
-          location: 'San Francisco, CA',
-          entrepreneur_name: 'John Smith'
-        },
-        {
-          id: '2',
-          name: 'Green Energy Project',
-          description: 'Renewable energy infrastructure development',
-          amount_sought: 750000,
-          expected_roi: 18,
-          industry: 'Energy',
-          status: 'published',
-          created_at: '2024-02-28',
-          location: 'Austin, TX',
-          entrepreneur_name: 'Sarah Johnson'
-        },
-        {
-          id: '3',
-          name: 'Healthcare Innovation',
-          description: 'Advanced medical device for remote patient monitoring',
-          amount_sought: 300000,
-          expected_roi: 30,
-          industry: 'Healthcare',
-          status: 'published',
-          created_at: '2024-02-25',
-          location: 'Boston, MA',
-          entrepreneur_name: 'Dr. Michael Chen'
-        },
-        {
-          id: '4',
-          name: 'Real Estate Development',
-          description: 'Mixed-use commercial and residential development',
-          amount_sought: 1200000,
-          expected_roi: 15,
-          industry: 'Real Estate',
-          status: 'funded',
-          created_at: '2024-02-20',
-          location: 'Miami, FL',
-          entrepreneur_name: 'Lisa Rodriguez'
-        }
-      ];
+      setError(null);
 
-      setOpportunities(mockOpportunities);
+      // Fetch real published opportunities from Supabase with entrepreneur details
+      const { data, error: fetchError } = await supabase
+        .from('opportunities')
+        .select(`
+          *,
+          entrepreneur:profiles!opportunities_entrepreneur_id_fkey(
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq('status', 'published')
+        .order('created_at', { ascending: false });
+
+      if (fetchError) {
+        console.error('Error fetching opportunities:', fetchError);
+        setError('Failed to load opportunities. Please try again.');
+        toast({
+          title: "Error",
+          description: "Failed to load opportunities data.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const opportunitiesData = data || [];
+      setOpportunities(opportunitiesData);
+
     } catch (error) {
       console.error('Error loading opportunities:', error);
+      setError('An unexpected error occurred. Please try again.');
+      toast({
+        title: "Error",
+        description: "Failed to load opportunities data.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -118,8 +113,8 @@ export default function OpportunitiesList() {
     if (searchTerm) {
       filtered = filtered.filter(opp => 
         opp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        opp.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        opp.entrepreneur_name.toLowerCase().includes(searchTerm.toLowerCase())
+        (opp.description && opp.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (opp.entrepreneur?.full_name && opp.entrepreneur.full_name.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
@@ -129,26 +124,32 @@ export default function OpportunitiesList() {
     }
 
     // ROI filter
-    if (roiFilter) {
+    if (roiFilter && opp.expected_roi) {
       const minRoi = parseInt(roiFilter);
-      filtered = filtered.filter(opp => opp.expected_roi >= minRoi);
+      filtered = filtered.filter(opp => opp.expected_roi && opp.expected_roi >= minRoi);
     }
 
     setFilteredOpportunities(filtered);
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: OpportunityStatus) => {
     switch (status) {
       case 'published':
         return <Badge className="bg-green-100 text-green-800">Open for Investment</Badge>;
       case 'funded':
         return <Badge className="bg-blue-100 text-blue-800">Funded</Badge>;
+      case 'draft':
+        return <Badge className="bg-gray-100 text-gray-800">Draft</Badge>;
+      case 'pending_review':
+        return <Badge className="bg-yellow-100 text-yellow-800">Pending Review</Badge>;
+      case 'rejected':
+        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
-  const getIndustryIcon = (industry: string) => {
+  const getIndustryIcon = (industry: string | null) => {
     switch (industry) {
       case 'Technology':
         return <Building2 className="h-4 w-4" />;
@@ -163,13 +164,45 @@ export default function OpportunitiesList() {
     }
   };
 
-  const industries = ['Technology', 'Energy', 'Healthcare', 'Real Estate', 'Finance', 'Education', 'Retail', 'Manufacturing'];
+  const handleRefresh = () => {
+    loadOpportunities();
+  };
+
+  // Get unique industries from actual data
+  const industries = Array.from(new Set(opportunities.map(opp => opp.industry).filter(Boolean)));
 
   if (loading) {
     return (
       <AuthenticatedLayout>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="text-lg">Loading opportunities...</div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <div className="text-lg">Loading opportunities...</div>
+          </div>
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AuthenticatedLayout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-2">Investment Opportunities</h1>
+            <p className="text-muted-foreground">Discover and invest in promising ventures</p>
+          </div>
+          
+          <div className="flex items-center justify-center min-h-64">
+            <div className="text-center">
+              <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Error Loading Opportunities</h3>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <Button onClick={handleRefresh} variant="outline">
+                Try Again
+              </Button>
+            </div>
+          </div>
         </div>
       </AuthenticatedLayout>
     );
@@ -178,59 +211,134 @@ export default function OpportunitiesList() {
   return (
     <AuthenticatedLayout>
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Browse Opportunities</h1>
-          <p className="text-muted-foreground">Discover investment opportunities that match your criteria</p>
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Investment Opportunities</h1>
+            <p className="text-muted-foreground">Discover and invest in promising ventures</p>
+          </div>
+          <Button onClick={handleRefresh} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
         </div>
 
-        {/* Filters */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Filter className="h-5 w-5" />
-              <span>Filters</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search opportunities..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              
-              <Select value={industryFilter} onValueChange={setIndustryFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Industries" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All Industries</SelectItem>
-                  {industries.map((industry) => (
-                    <SelectItem key={industry} value={industry}>
-                      {industry}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        {/* Search and Filters */}
+        <div className="mb-8 space-y-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search opportunities..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={industryFilter} onValueChange={setIndustryFilter}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="All Industries" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Industries</SelectItem>
+                {industries.map((industry) => (
+                  <SelectItem key={industry} value={industry || ''}>
+                    {industry}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={roiFilter} onValueChange={setRoiFilter}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="All ROI" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All ROI</SelectItem>
+                <SelectItem value="10">10%+ ROI</SelectItem>
+                <SelectItem value="15">15%+ ROI</SelectItem>
+                <SelectItem value="20">20%+ ROI</SelectItem>
+                <SelectItem value="25">25%+ ROI</SelectItem>
+                <SelectItem value="30">30%+ ROI</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
-              <Select value={roiFilter} onValueChange={setRoiFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Min ROI" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Any ROI</SelectItem>
-                  <SelectItem value="10">10%+</SelectItem>
-                  <SelectItem value="15">15%+</SelectItem>
-                  <SelectItem value="20">20%+</SelectItem>
-                  <SelectItem value="25">25%+</SelectItem>
-                  <SelectItem value="30">30%+</SelectItem>
-                </SelectContent>
-              </Select>
+        {/* Results Count */}
+        <div className="mb-6">
+          <p className="text-muted-foreground">
+            Showing {filteredOpportunities.length} of {opportunities.length} opportunities
+          </p>
+        </div>
 
+        {/* Opportunities Grid */}
+        {filteredOpportunities.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredOpportunities.map((opportunity) => (
+              <Card key={opportunity.id} className="hover:shadow-lg transition-shadow cursor-pointer" data-testid="opportunity-item">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-2">
+                      {getIndustryIcon(opportunity.industry)}
+                      <div>
+                        <CardTitle className="text-lg">{opportunity.name}</CardTitle>
+                        <CardDescription className="text-sm">
+                          {opportunity.industry || 'Uncategorized'}
+                        </CardDescription>
+                      </div>
+                    </div>
+                    {getStatusBadge(opportunity.status)}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground line-clamp-3">
+                    {opportunity.description || 'No description available'}
+                  </p>
+                  
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Amount Sought</p>
+                      <p className="font-semibold">{formatCurrency(opportunity.amount_sought)}</p>
+                    </div>
+                    {opportunity.expected_roi && (
+                      <div>
+                        <p className="text-muted-foreground">Expected ROI</p>
+                        <p className="font-semibold text-green-600">{opportunity.expected_roi}%</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center space-x-1">
+                      <Calendar className="h-3 w-3" />
+                      <span>{opportunity.created_at ? new Date(opportunity.created_at).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <User className="h-3 w-3" />
+                      <span>{opportunity.entrepreneur?.full_name || 'Unknown'}</span>
+                    </div>
+                  </div>
+
+                  <Button 
+                    className="w-full" 
+                    onClick={() => navigate(`/opportunities/${opportunity.id}`)}
+                  >
+                    View Details
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <Building2 className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No opportunities found</h3>
+            <p className="text-muted-foreground mb-4">
+              {opportunities.length === 0 
+                ? "No investment opportunities are currently available."
+                : "No opportunities match your current filters."
+              }
+            </p>
+            {opportunities.length > 0 && (
               <Button 
                 variant="outline" 
                 onClick={() => {
@@ -241,103 +349,8 @@ export default function OpportunitiesList() {
               >
                 Clear Filters
               </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Results */}
-        <div className="mb-4">
-          <p className="text-muted-foreground">
-            Showing {filteredOpportunities.length} of {opportunities.length} opportunities
-          </p>
-        </div>
-
-        {/* Opportunities Grid */}
-        {filteredOpportunities.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredOpportunities.map((opportunity) => (
-              <Card key={opportunity.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        {getIndustryIcon(opportunity.industry)}
-                        <span className="text-sm text-muted-foreground">{opportunity.industry}</span>
-                      </div>
-                      <CardTitle className="text-lg">{opportunity.name}</CardTitle>
-                      {getStatusBadge(opportunity.status)}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-muted-foreground line-clamp-3">
-                    {opportunity.description}
-                  </p>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Funding Sought:</span>
-                      <span className="font-semibold">{formatCurrency(opportunity.amount_sought)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Expected ROI:</span>
-                      <span className="font-semibold text-green-600">{opportunity.expected_roi}%</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Location:</span>
-                      <span className="flex items-center space-x-1">
-                        <MapPin className="h-3 w-3" />
-                        <span>{opportunity.location}</span>
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Posted:</span>
-                      <span className="flex items-center space-x-1">
-                        <Calendar className="h-3 w-3" />
-                        <span>{new Date(opportunity.created_at).toLocaleDateString()}</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        by {opportunity.entrepreneur_name}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate(`/opportunities/${opportunity.id}`)}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Details
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            )}
           </div>
-        ) : (
-          <Card>
-            <CardContent className="text-center py-12">
-              <Search className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No opportunities found</h3>
-              <p className="text-muted-foreground mb-4">
-                Try adjusting your filters to find more opportunities
-              </p>
-              <Button 
-                variant="outline"
-                onClick={() => {
-                  setSearchTerm('');
-                  setIndustryFilter('');
-                  setRoiFilter('');
-                }}
-              >
-                Clear Filters
-              </Button>
-            </CardContent>
-          </Card>
         )}
       </div>
     </AuthenticatedLayout>

@@ -14,20 +14,30 @@ import {
   Eye,
   TrendingUp,
   Calendar,
-  User
+  User,
+  AlertCircle
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import type { Database } from '@/integrations/supabase/types';
+
+type OpportunityStatus = Database['public']['Enums']['opportunity_status'];
 
 interface Opportunity {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   amount_sought: number;
-  expected_roi: number;
-  industry: string;
-  status: 'pending_review' | 'approved' | 'rejected';
-  created_at: string;
-  entrepreneur_name: string;
-  entrepreneur_email: string;
+  expected_roi: number | null;
+  industry: string | null;
+  status: OpportunityStatus;
+  created_at: string | null;
+  entrepreneur_id: string;
+  entrepreneur?: {
+    full_name: string | null;
+    avatar_url?: string | null;
+    email?: string | null;
+  };
 }
 
 interface ReviewStats {
@@ -46,8 +56,10 @@ export default function OpportunityReviewList() {
     totalOpportunities: 0
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { formatCurrency } = useCurrency();
+  const { toast } = useToast();
 
   useEffect(() => {
     loadOpportunities();
@@ -56,65 +68,40 @@ export default function OpportunityReviewList() {
   const loadOpportunities = async () => {
     try {
       setLoading(true);
-      // Mock data - replace with actual API call
-      const mockOpportunities: Opportunity[] = [
-        {
-          id: '1',
-          name: 'Tech Startup Alpha',
-          description: 'Innovative AI-powered solution for enterprise automation',
-          amount_sought: 500000,
-          expected_roi: 25,
-          industry: 'Technology',
-          status: 'pending_review',
-          created_at: '2024-03-01',
-          entrepreneur_name: 'John Smith',
-          entrepreneur_email: 'john@techstartup.com'
-        },
-        {
-          id: '2',
-          name: 'Green Energy Project',
-          description: 'Renewable energy infrastructure development',
-          amount_sought: 750000,
-          expected_roi: 18,
-          industry: 'Energy',
-          status: 'pending_review',
-          created_at: '2024-02-28',
-          entrepreneur_name: 'Sarah Johnson',
-          entrepreneur_email: 'sarah@greenenergy.com'
-        },
-        {
-          id: '3',
-          name: 'Healthcare Innovation',
-          description: 'Advanced medical device for remote patient monitoring',
-          amount_sought: 300000,
-          expected_roi: 30,
-          industry: 'Healthcare',
-          status: 'approved',
-          created_at: '2024-02-25',
-          entrepreneur_name: 'Dr. Michael Chen',
-          entrepreneur_email: 'michael@healthcare.com'
-        },
-        {
-          id: '4',
-          name: 'Real Estate Development',
-          description: 'Mixed-use commercial and residential development',
-          amount_sought: 1200000,
-          expected_roi: 15,
-          industry: 'Real Estate',
-          status: 'rejected',
-          created_at: '2024-02-20',
-          entrepreneur_name: 'Lisa Rodriguez',
-          entrepreneur_email: 'lisa@realestate.com'
-        }
-      ];
+      setError(null);
 
-      setOpportunities(mockOpportunities);
+      // Fetch real opportunities from Supabase with entrepreneur details
+      const { data, error: fetchError } = await supabase
+        .from('opportunities')
+        .select(`
+          *,
+          entrepreneur:profiles!opportunities_entrepreneur_id_fkey(
+            full_name,
+            avatar_url,
+            email
+          )
+        `)
+        .order('created_at', { ascending: false });
 
-      // Calculate stats
-      const pendingReview = mockOpportunities.filter(o => o.status === 'pending_review').length;
-      const approved = mockOpportunities.filter(o => o.status === 'approved').length;
-      const rejected = mockOpportunities.filter(o => o.status === 'rejected').length;
-      const totalOpportunities = mockOpportunities.length;
+      if (fetchError) {
+        console.error('Error fetching opportunities:', fetchError);
+        setError('Failed to load opportunities. Please try again.');
+        toast({
+          title: "Error",
+          description: "Failed to load opportunities data.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const opportunitiesData = data || [];
+      setOpportunities(opportunitiesData);
+
+      // Calculate stats from real data
+      const pendingReview = opportunitiesData.filter(o => o.status === 'pending_review').length;
+      const approved = opportunitiesData.filter(o => o.status === 'published').length;
+      const rejected = opportunitiesData.filter(o => o.status === 'rejected').length;
+      const totalOpportunities = opportunitiesData.length;
 
       setStats({
         pendingReview,
@@ -122,29 +109,46 @@ export default function OpportunityReviewList() {
         rejected,
         totalOpportunities
       });
+
     } catch (error) {
       console.error('Error loading opportunities:', error);
+      setError('An unexpected error occurred. Please try again.');
+      toast({
+        title: "Error",
+        description: "Failed to load opportunities data.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: OpportunityStatus) => {
     switch (status) {
       case 'pending_review':
         return <Badge className="bg-yellow-100 text-yellow-800 flex items-center gap-1">
           <Clock className="h-3 w-3" />
           Pending Review
         </Badge>;
-      case 'approved':
+      case 'published':
         return <Badge className="bg-green-100 text-green-800 flex items-center gap-1">
           <CheckCircle className="h-3 w-3" />
-          Approved
+          Published
         </Badge>;
       case 'rejected':
         return <Badge className="bg-red-100 text-red-800 flex items-center gap-1">
           <XCircle className="h-3 w-3" />
           Rejected
+        </Badge>;
+      case 'draft':
+        return <Badge className="bg-gray-100 text-gray-800 flex items-center gap-1">
+          <FileText className="h-3 w-3" />
+          Draft
+        </Badge>;
+      case 'funded':
+        return <Badge className="bg-blue-100 text-blue-800 flex items-center gap-1">
+          <TrendingUp className="h-3 w-3" />
+          Funded
         </Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
@@ -155,11 +159,42 @@ export default function OpportunityReviewList() {
     navigate(`/admin/opportunities/${opportunityId}/review`);
   };
 
+  const handleRefresh = () => {
+    loadOpportunities();
+  };
+
   if (loading) {
     return (
       <AuthenticatedLayout>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="text-lg">Loading opportunities...</div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <div className="text-lg">Loading opportunities...</div>
+          </div>
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AuthenticatedLayout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-2">Opportunity Review</h1>
+            <p className="text-muted-foreground">Review and manage investment opportunities</p>
+          </div>
+          
+          <div className="flex items-center justify-center min-h-64">
+            <div className="text-center">
+              <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Error Loading Opportunities</h3>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <Button onClick={handleRefresh} variant="outline">
+                Try Again
+              </Button>
+            </div>
+          </div>
         </div>
       </AuthenticatedLayout>
     );
@@ -168,9 +203,14 @@ export default function OpportunityReviewList() {
   return (
     <AuthenticatedLayout>
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Opportunity Review</h1>
-          <p className="text-muted-foreground">Review and manage investment opportunities</p>
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Opportunity Review</h1>
+            <p className="text-muted-foreground">Review and manage investment opportunities</p>
+          </div>
+          <Button onClick={handleRefresh} variant="outline" size="sm">
+            Refresh
+          </Button>
         </div>
 
         {/* Review Stats */}
@@ -190,13 +230,13 @@ export default function OpportunityReviewList() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Approved</CardTitle>
+              <CardTitle className="text-sm font-medium">Published</CardTitle>
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.approved}</div>
               <p className="text-xs text-muted-foreground">
-                Successfully approved
+                Successfully published
               </p>
             </CardContent>
           </Card>
@@ -231,7 +271,7 @@ export default function OpportunityReviewList() {
         <Tabs defaultValue="pending" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="pending">Pending Review</TabsTrigger>
-            <TabsTrigger value="approved">Approved</TabsTrigger>
+            <TabsTrigger value="published">Published</TabsTrigger>
             <TabsTrigger value="rejected">Rejected</TabsTrigger>
           </TabsList>
 
@@ -245,7 +285,7 @@ export default function OpportunityReviewList() {
                 {opportunities.filter(o => o.status === 'pending_review').length > 0 ? (
                   <div className="space-y-4">
                     {opportunities.filter(o => o.status === 'pending_review').map((opportunity) => (
-                      <div key={opportunity.id} className="border rounded-lg p-6 space-y-4">
+                      <div key={opportunity.id} className="border rounded-lg p-6 space-y-4" data-testid="opportunity-item">
                         <div className="flex items-start justify-between">
                           <div className="space-y-2">
                             <div className="flex items-center space-x-2">
@@ -258,17 +298,19 @@ export default function OpportunityReviewList() {
                                 <TrendingUp className="h-4 w-4" />
                                 <span>{formatCurrency(opportunity.amount_sought)}</span>
                               </span>
-                              <span className="flex items-center space-x-1">
-                                <TrendingUp className="h-4 w-4" />
-                                <span>{opportunity.expected_roi}% ROI</span>
-                              </span>
+                              {opportunity.expected_roi && (
+                                <span className="flex items-center space-x-1">
+                                  <TrendingUp className="h-4 w-4" />
+                                  <span>{opportunity.expected_roi}% ROI</span>
+                                </span>
+                              )}
                               <span className="flex items-center space-x-1">
                                 <Calendar className="h-4 w-4" />
-                                <span>{new Date(opportunity.created_at).toLocaleDateString()}</span>
+                                <span>{opportunity.created_at ? new Date(opportunity.created_at).toLocaleDateString() : 'N/A'}</span>
                               </span>
                               <span className="flex items-center space-x-1">
                                 <User className="h-4 w-4" />
-                                <span>{opportunity.entrepreneur_name}</span>
+                                <span>{opportunity.entrepreneur?.full_name || 'Unknown'}</span>
                               </span>
                             </div>
                           </div>
@@ -283,6 +325,7 @@ export default function OpportunityReviewList() {
                             </Button>
                             <Button
                               onClick={() => handleReview(opportunity.id)}
+                              data-testid="review-opportunity"
                             >
                               Review
                             </Button>
@@ -304,17 +347,17 @@ export default function OpportunityReviewList() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="approved" className="space-y-6">
+          <TabsContent value="published" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Approved Opportunities</CardTitle>
-                <CardDescription>Successfully approved investment opportunities</CardDescription>
+                <CardTitle>Published Opportunities</CardTitle>
+                <CardDescription>Successfully published investment opportunities</CardDescription>
               </CardHeader>
               <CardContent>
-                {opportunities.filter(o => o.status === 'approved').length > 0 ? (
+                {opportunities.filter(o => o.status === 'published').length > 0 ? (
                   <div className="space-y-4">
-                    {opportunities.filter(o => o.status === 'approved').map((opportunity) => (
-                      <div key={opportunity.id} className="border rounded-lg p-6 space-y-4">
+                    {opportunities.filter(o => o.status === 'published').map((opportunity) => (
+                      <div key={opportunity.id} className="border rounded-lg p-6 space-y-4" data-testid="opportunity-item">
                         <div className="flex items-start justify-between">
                           <div className="space-y-2">
                             <div className="flex items-center space-x-2">
@@ -327,17 +370,19 @@ export default function OpportunityReviewList() {
                                 <TrendingUp className="h-4 w-4" />
                                 <span>{formatCurrency(opportunity.amount_sought)}</span>
                               </span>
-                              <span className="flex items-center space-x-1">
-                                <TrendingUp className="h-4 w-4" />
-                                <span>{opportunity.expected_roi}% ROI</span>
-                              </span>
+                              {opportunity.expected_roi && (
+                                <span className="flex items-center space-x-1">
+                                  <TrendingUp className="h-4 w-4" />
+                                  <span>{opportunity.expected_roi}% ROI</span>
+                                </span>
+                              )}
                               <span className="flex items-center space-x-1">
                                 <Calendar className="h-4 w-4" />
-                                <span>{new Date(opportunity.created_at).toLocaleDateString()}</span>
+                                <span>{opportunity.created_at ? new Date(opportunity.created_at).toLocaleDateString() : 'N/A'}</span>
                               </span>
                               <span className="flex items-center space-x-1">
                                 <User className="h-4 w-4" />
-                                <span>{opportunity.entrepreneur_name}</span>
+                                <span>{opportunity.entrepreneur?.full_name || 'Unknown'}</span>
                               </span>
                             </div>
                           </div>
@@ -358,9 +403,9 @@ export default function OpportunityReviewList() {
                 ) : (
                   <div className="text-center py-12">
                     <CheckCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No approved opportunities</h3>
+                    <h3 className="text-lg font-semibold mb-2">No published opportunities</h3>
                     <p className="text-muted-foreground mb-4">
-                      Approved opportunities will appear here
+                      Published opportunities will appear here
                     </p>
                   </div>
                 )}
@@ -378,7 +423,7 @@ export default function OpportunityReviewList() {
                 {opportunities.filter(o => o.status === 'rejected').length > 0 ? (
                   <div className="space-y-4">
                     {opportunities.filter(o => o.status === 'rejected').map((opportunity) => (
-                      <div key={opportunity.id} className="border rounded-lg p-6 space-y-4">
+                      <div key={opportunity.id} className="border rounded-lg p-6 space-y-4" data-testid="opportunity-item">
                         <div className="flex items-start justify-between">
                           <div className="space-y-2">
                             <div className="flex items-center space-x-2">
@@ -391,17 +436,19 @@ export default function OpportunityReviewList() {
                                 <TrendingUp className="h-4 w-4" />
                                 <span>{formatCurrency(opportunity.amount_sought)}</span>
                               </span>
-                              <span className="flex items-center space-x-1">
-                                <TrendingUp className="h-4 w-4" />
-                                <span>{opportunity.expected_roi}% ROI</span>
-                              </span>
+                              {opportunity.expected_roi && (
+                                <span className="flex items-center space-x-1">
+                                  <TrendingUp className="h-4 w-4" />
+                                  <span>{opportunity.expected_roi}% ROI</span>
+                                </span>
+                              )}
                               <span className="flex items-center space-x-1">
                                 <Calendar className="h-4 w-4" />
-                                <span>{new Date(opportunity.created_at).toLocaleDateString()}</span>
+                                <span>{opportunity.created_at ? new Date(opportunity.created_at).toLocaleDateString() : 'N/A'}</span>
                               </span>
                               <span className="flex items-center space-x-1">
                                 <User className="h-4 w-4" />
-                                <span>{opportunity.entrepreneur_name}</span>
+                                <span>{opportunity.entrepreneur?.full_name || 'Unknown'}</span>
                               </span>
                             </div>
                           </div>

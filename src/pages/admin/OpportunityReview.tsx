@@ -1,245 +1,532 @@
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { CheckCircle, XCircle, DollarSign, TrendingUp, Building, Calendar, User, FileText, ArrowLeft, AlertCircle, RefreshCw } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { AuthenticatedLayout } from '@/components/Layout/AuthenticatedLayout';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useCurrency } from '@/contexts/CurrencyContext';
+import type { Database } from '@/integrations/supabase/types';
 
-import { CheckCircle, XCircle, DollarSign, TrendingUp, Building, Calendar, User, FileText } from 'lucide-react'
-import { useParams } from 'react-router-dom'
-import { AuthenticatedLayout } from '@/components/Layout/AuthenticatedLayout'
+type OpportunityStatus = Database['public']['Enums']['opportunity_status'];
+
+interface Opportunity {
+  id: string;
+  name: string;
+  description: string | null;
+  amount_sought: number;
+  expected_roi: number | null;
+  industry: string | null;
+  status: OpportunityStatus;
+  created_at: string | null;
+  entrepreneur_id: string;
+  location_data_jsonb?: any;
+  team_data_jsonb?: any;
+  profitability_data_jsonb?: any;
+  entrepreneur?: {
+    full_name: string | null;
+    avatar_url?: string | null;
+    email?: string | null;
+  };
+}
 
 const OpportunityReview = () => {
-  const { id } = useParams()
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { formatCurrency } = useCurrency();
+  
+  const [opportunity, setOpportunity] = useState<Opportunity | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reviewNotes, setReviewNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Mock data - in real app this would be fetched based on ID
-  const opportunity = {
-    id: id,
-    name: "Green Energy Solutions",
-    description: "Revolutionary solar panel technology with 40% higher efficiency than current market standards. Our patented nano-coating technology allows for maximum energy absorption while maintaining durability in harsh weather conditions.",
-    amount: "$300,000",
-    roi: "30%",
-    industry: "Energy",
-    timeline: "8-12 months",
-    submitted: "2024-01-20",
-    entrepreneur: {
-      name: "Alice Johnson",
-      email: "alice@greenenergy.com",
-      title: "CEO & Founder",
-      experience: "15+ years in renewable energy",
-      previousCompanies: ["SolarTech Corp", "EcoEnergy Solutions"]
-    },
-    businessPlan: {
-      marketSize: "$50B global solar market",
-      targetMarket: "Commercial and residential solar installations",
-      competition: "SunPower, Tesla Solar, Canadian Solar",
-      uniqueValue: "40% higher efficiency with 25% lower cost"
-    },
-    financials: {
-      currentRevenue: "$125K ARR",
-      projectedRevenue: "$2M in Year 2",
-      customers: "8 pilot customers",
-      team: "12 employees"
-    },
-    documents: [
-      "Business Plan.pdf",
-      "Financial Projections.xlsx",
-      "Patent Documentation.pdf",
-      "Market Research.pdf"
-    ]
+  useEffect(() => {
+    if (id) {
+      loadOpportunity();
+    }
+  }, [id]);
+
+  const loadOpportunity = async () => {
+    if (!id) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error: fetchError } = await supabase
+        .from('opportunities')
+        .select(`
+          *,
+          entrepreneur:profiles!opportunities_entrepreneur_id_fkey(
+            full_name,
+            avatar_url,
+            email
+          )
+        `)
+        .eq('id', id)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching opportunity:', fetchError);
+        if (fetchError.code === 'PGRST116') {
+          setError('Opportunity not found.');
+        } else {
+          setError('Failed to load opportunity details. Please try again.');
+        }
+        toast({
+          title: "Error",
+          description: "Failed to load opportunity data.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setOpportunity(data);
+
+    } catch (error) {
+      console.error('Error loading opportunity:', error);
+      setError('An unexpected error occurred. Please try again.');
+      toast({
+        title: "Error",
+        description: "Failed to load opportunity data.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!opportunity) return;
+
+    try {
+      setIsSubmitting(true);
+
+      const { error } = await supabase
+        .from('opportunities')
+        .update({ 
+          status: 'published',
+          team_data_jsonb: {
+            ...opportunity.team_data_jsonb,
+            admin_review_notes: reviewNotes,
+            reviewed_at: new Date().toISOString()
+          }
+        })
+        .eq('id', opportunity.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Opportunity Approved",
+        description: "The opportunity has been published successfully.",
+      });
+
+      navigate('/admin/opportunities/review-list');
+
+    } catch (error) {
+      console.error('Error approving opportunity:', error);
+      toast({
+        title: "Error",
+        description: "Failed to approve opportunity.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!opportunity) return;
+
+    try {
+      setIsSubmitting(true);
+
+      const { error } = await supabase
+        .from('opportunities')
+        .update({ 
+          status: 'rejected',
+          team_data_jsonb: {
+            ...opportunity.team_data_jsonb,
+            admin_review_notes: reviewNotes,
+            rejection_reason: reviewNotes,
+            reviewed_at: new Date().toISOString()
+          }
+        })
+        .eq('id', opportunity.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Opportunity Rejected",
+        description: "The opportunity has been rejected.",
+      });
+
+      navigate('/admin/opportunities/review-list');
+
+    } catch (error) {
+      console.error('Error rejecting opportunity:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reject opportunity.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRefresh = () => {
+    loadOpportunity();
+  };
+
+  if (loading) {
+    return (
+      <AuthenticatedLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <div className="text-lg">Loading opportunity details...</div>
+          </div>
+        </div>
+      </AuthenticatedLayout>
+    );
   }
 
-  const handleApprove = () => {
-    console.log('Approving opportunity:', id)
-    // In real app, this would update Supabase
-  }
-
-  const handleReject = () => {
-    console.log('Rejecting opportunity:', id)
-    // In real app, this would update Supabase
-  }
-
-  return (
-    <AuthenticatedLayout>
-      <div className="max-w-6xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="bg-slate-800 rounded-lg p-8">
-          <div className="flex items-start justify-between">
-            <div className="space-y-4">
-              <div>
-                <h1 className="text-3xl font-bold text-white">{opportunity.name}</h1>
-                <p className="text-slate-400">Submitted: {opportunity.submitted}</p>
-              </div>
-              <div className="flex items-center space-x-6">
-                <div className="flex items-center space-x-2">
-                  <DollarSign className="text-emerald-500" size={20} />
-                  <span className="text-white font-semibold">{opportunity.amount}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <TrendingUp className="text-emerald-500" size={20} />
-                  <span className="text-white font-semibold">{opportunity.roi}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Building className="text-emerald-500" size={20} />
-                  <span className="text-slate-400">{opportunity.industry}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Calendar className="text-emerald-500" size={20} />
-                  <span className="text-slate-400">{opportunity.timeline}</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={handleReject}
-                className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center"
-              >
-                <XCircle className="mr-2" size={20} />
-                Reject
-              </button>
-              <button
-                onClick={handleApprove}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center"
-              >
-                <CheckCircle className="mr-2" size={20} />
-                Approve
-              </button>
+  if (error || !opportunity) {
+    return (
+      <AuthenticatedLayout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-8">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/admin/opportunities/review-list')}
+              className="mb-4"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Review List
+            </Button>
+            <h1 className="text-3xl font-bold mb-2">Opportunity Review</h1>
+          </div>
+          
+          <div className="flex items-center justify-center min-h-64">
+            <div className="text-center">
+              <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Error Loading Opportunity</h3>
+              <p className="text-muted-foreground mb-4">{error || 'Opportunity not found'}</p>
+              <Button onClick={handleRefresh} variant="outline">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
             </div>
           </div>
         </div>
+      </AuthenticatedLayout>
+    );
+  }
 
-        <div className="grid lg:grid-cols-3 gap-8">
+  // Extract data from JSONB fields
+  const locationData = opportunity.location_data_jsonb as any;
+  const teamData = opportunity.team_data_jsonb as any;
+  const profitabilityData = opportunity.profitability_data_jsonb as any;
+
+  return (
+    <AuthenticatedLayout>
+      <div className="container mx-auto px-4 py-8">
+        {/* Back Button */}
+        <Button 
+          variant="outline" 
+          onClick={() => navigate('/admin/opportunities/review-list')}
+          className="mb-6"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Review List
+        </Button>
+
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">{opportunity.name}</h1>
+              <p className="text-muted-foreground text-lg">
+                {opportunity.industry || 'Uncategorized Industry'}
+              </p>
+            </div>
+            <Badge variant="outline" className="text-lg px-4 py-2">
+              {opportunity.status.replace('_', ' ').toUpperCase()}
+            </Badge>
+          </div>
+          
+          <p className="text-muted-foreground leading-relaxed">
+            {opportunity.description || 'No description available'}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Opportunity Description */}
-            <div className="bg-slate-800 rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-                <FileText className="mr-2" size={20} />
-                Opportunity Description
-              </h2>
-              <p className="text-slate-300 leading-relaxed">{opportunity.description}</p>
-            </div>
-
-            {/* Business Plan */}
-            <div className="bg-slate-800 rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">Business Plan Overview</h2>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-emerald-500 font-semibold mb-2">Market Size</h3>
-                  <p className="text-slate-300">{opportunity.businessPlan.marketSize}</p>
-                </div>
-                <div>
-                  <h3 className="text-emerald-500 font-semibold mb-2">Target Market</h3>
-                  <p className="text-slate-300">{opportunity.businessPlan.targetMarket}</p>
-                </div>
-                <div>
-                  <h3 className="text-emerald-500 font-semibold mb-2">Competition</h3>
-                  <p className="text-slate-300">{opportunity.businessPlan.competition}</p>
-                </div>
-                <div>
-                  <h3 className="text-emerald-500 font-semibold mb-2">Unique Value</h3>
-                  <p className="text-slate-300">{opportunity.businessPlan.uniqueValue}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Financial Information */}
-            <div className="bg-slate-800 rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">Financial Information</h2>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-emerald-500 font-semibold mb-2">Current Revenue</h3>
-                  <p className="text-slate-300">{opportunity.financials.currentRevenue}</p>
-                </div>
-                <div>
-                  <h3 className="text-emerald-500 font-semibold mb-2">Projected Revenue</h3>
-                  <p className="text-slate-300">{opportunity.financials.projectedRevenue}</p>
-                </div>
-                <div>
-                  <h3 className="text-emerald-500 font-semibold mb-2">Current Customers</h3>
-                  <p className="text-slate-300">{opportunity.financials.customers}</p>
-                </div>
-                <div>
-                  <h3 className="text-emerald-500 font-semibold mb-2">Team Size</h3>
-                  <p className="text-slate-300">{opportunity.financials.team}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Documents */}
-            <div className="bg-slate-800 rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">Supporting Documents</h2>
-              <div className="space-y-3">
-                {opportunity.documents.map((doc, index) => (
-                  <div key={index} className="flex items-center justify-between bg-slate-700 p-3 rounded-lg">
-                    <span className="text-white">{doc}</span>
-                    <button className="text-emerald-500 hover:text-emerald-400 text-sm font-semibold">
-                      Download
-                    </button>
+          <div className="lg:col-span-2 space-y-6">
+            {/* Investment Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <DollarSign className="h-5 w-5" />
+                  <span>Investment Details</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Amount Sought</p>
+                    <p className="text-2xl font-bold">{formatCurrency(opportunity.amount_sought)}</p>
                   </div>
-                ))}
-              </div>
-            </div>
+                  {opportunity.expected_roi && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Expected ROI</p>
+                      <p className="text-2xl font-bold text-green-600">{opportunity.expected_roi}%</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Business Details */}
+            {teamData && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Building className="h-5 w-5" />
+                    <span>Business Details</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {teamData.opportunity_type && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Opportunity Type</p>
+                      <p className="font-medium">{teamData.opportunity_type}</p>
+                    </div>
+                  )}
+                  {locationData?.team_size && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Team Size</p>
+                      <p className="font-medium">{locationData.team_size} members</p>
+                    </div>
+                  )}
+                  {locationData?.experience_years && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Experience</p>
+                      <p className="font-medium">{locationData.experience_years} years</p>
+                    </div>
+                  )}
+                  {locationData?.location && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Location</p>
+                      <p className="font-medium">{locationData.location}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Risk Assessment */}
+            {teamData?.risk_assessment && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <AlertCircle className="h-5 w-5" />
+                    <span>Risk Assessment</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {teamData.risk_assessment.overallRisk && (
+                      <div>
+                        <div className="flex justify-between text-sm mb-2">
+                          <span>Overall Risk Level</span>
+                          <span>{teamData.risk_assessment.overallRisk}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-red-500 h-2 rounded-full" 
+                            style={{ width: `${teamData.risk_assessment.overallRisk}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+                    {teamData.risk_assessment.factors && (
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-2">Key Risk Factors</p>
+                        <ul className="space-y-1">
+                          {teamData.risk_assessment.factors.map((factor: string, index: number) => (
+                            <li key={index} className="text-sm flex items-center space-x-2">
+                              <AlertCircle className="h-3 w-3 text-yellow-500" />
+                              <span>{factor}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Milestones */}
+            {teamData?.milestones && teamData.milestones.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <TrendingUp className="h-5 w-5" />
+                    <span>Project Milestones</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {teamData.milestones.map((milestone: any, index: number) => (
+                      <div key={index} className="border rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-medium">{milestone.title}</h4>
+                          <Badge variant="outline">{milestone.status}</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">{milestone.description}</p>
+                        <div className="flex justify-between text-sm">
+                          <span>Target: {milestone.target_date}</span>
+                          {milestone.amount_allocated && (
+                            <span>Budget: {formatCurrency(milestone.amount_allocated)}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Entrepreneur Info */}
-            <div className="bg-slate-800 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                <User className="mr-2" size={20} />
-                Entrepreneur
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-white font-semibold">{opportunity.entrepreneur.name}</p>
-                  <p className="text-slate-400 text-sm">{opportunity.entrepreneur.title}</p>
-                  <p className="text-slate-400 text-sm">{opportunity.entrepreneur.email}</p>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <User className="h-5 w-5" />
+                  <span>Entrepreneur</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-3">
+                    {opportunity.entrepreneur?.avatar_url ? (
+                      <img 
+                        src={opportunity.entrepreneur.avatar_url} 
+                        alt="Entrepreneur" 
+                        className="w-12 h-12 rounded-full"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
+                        <User className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-medium">{opportunity.entrepreneur?.full_name || 'Unknown'}</p>
+                      {opportunity.entrepreneur?.email && (
+                        <p className="text-sm text-muted-foreground">{opportunity.entrepreneur.email}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Submitted</p>
+                    <p className="font-medium">
+                      {opportunity.created_at ? new Date(opportunity.created_at).toLocaleDateString() : 'N/A'}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-emerald-500 font-semibold mb-1">Experience</h4>
-                  <p className="text-slate-300 text-sm">{opportunity.entrepreneur.experience}</p>
-                </div>
-                <div>
-                  <h4 className="text-emerald-500 font-semibold mb-1">Previous Companies</h4>
-                  {opportunity.entrepreneur.previousCompanies.map((company, index) => (
-                    <p key={index} className="text-slate-300 text-sm">• {company}</p>
-                  ))}
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             {/* Review Checklist */}
-            <div className="bg-slate-800 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Review Checklist</h3>
-              <div className="space-y-3">
-                {[
-                  "Business plan completeness",
-                  "Financial projections accuracy",
-                  "Market opportunity validation",
-                  "Team credentials verification",
-                  "Legal documentation review",
-                  "Due diligence completed"
-                ].map((item, index) => (
-                  <label key={index} className="flex items-center space-x-3">
-                    <input 
-                      type="checkbox" 
-                      className="w-4 h-4 text-emerald-600 bg-slate-700 border-slate-600 rounded focus:ring-emerald-500"
-                    />
-                    <span className="text-slate-300 text-sm">{item}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <FileText className="h-5 w-5" />
+                  <span>Review Checklist</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {[
+                    "Business plan completeness",
+                    "Financial projections accuracy",
+                    "Market opportunity validation",
+                    "Team credentials verification",
+                    "Legal documentation review",
+                    "Due diligence completed"
+                  ].map((item, index) => (
+                    <label key={index} className="flex items-center space-x-3">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary"
+                      />
+                      <span className="text-sm">{item}</span>
+                    </label>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Admin Notes */}
-            <div className="bg-slate-800 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Admin Notes</h3>
-              <textarea
-                rows={4}
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 p-3"
-                placeholder="Add your review notes here..."
-              />
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <FileText className="h-5 w-5" />
+                  <span>Review Notes</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  placeholder="Add your review notes here..."
+                  value={reviewNotes}
+                  onChange={(e) => setReviewNotes(e.target.value)}
+                  rows={4}
+                  className="w-full"
+                />
+              </CardContent>
+            </Card>
+
+            {/* Review Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Review Decision</CardTitle>
+                <CardDescription>Make your decision on this opportunity</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button 
+                  className="w-full bg-green-600 hover:bg-green-700" 
+                  onClick={handleApprove}
+                  disabled={isSubmitting}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Approve & Publish
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  className="w-full" 
+                  onClick={handleReject}
+                  disabled={isSubmitting}
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Reject
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
     </AuthenticatedLayout>
-  )
-}
+  );
+};
 
-export default OpportunityReview
+export default OpportunityReview;

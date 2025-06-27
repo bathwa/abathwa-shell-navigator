@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import { useDataStore } from "@/store/useDataStore";
 import { useEffect } from "react";
+import { CurrencyProvider } from "@/contexts/CurrencyContext";
 
 // Pages
 import Landing from "./pages/Landing";
@@ -20,6 +20,9 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import OpportunityReview from "./pages/admin/OpportunityReview";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import UserManagement from "./pages/admin/UserManagement";
+import InvestmentPools from "./pages/admin/InvestmentPools";
+import EscrowManagement from "./pages/admin/EscrowManagement";
 
 // Components
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -73,72 +76,89 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={!isAuthenticated ? <Landing /> : <Navigate to={getDashboardRoute()} />} />
-            <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to={getDashboardRoute()} />} />
-            <Route path="/signup" element={!isAuthenticated ? <SignUp /> : <Navigate to={getDashboardRoute()} />} />
+      <CurrencyProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={!isAuthenticated ? <Landing /> : <Navigate to={getDashboardRoute()} />} />
+              <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to={getDashboardRoute()} />} />
+              <Route path="/signup" element={!isAuthenticated ? <SignUp /> : <Navigate to={getDashboardRoute()} />} />
 
-            {/* Protected Routes */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Navigate to={getDashboardRoute()} />
-              </ProtectedRoute>
-            } />
+              {/* Protected Routes */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Navigate to={getDashboardRoute()} />
+                </ProtectedRoute>
+              } />
 
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            } />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } />
 
-            {/* Entrepreneur Routes */}
-            <Route path="/entrepreneur/dashboard" element={
-              <ProtectedRoute allowedRoles={['entrepreneur']}>
-                <EntrepreneurDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/entrepreneur/opportunities/new" element={
-              <ProtectedRoute allowedRoles={['entrepreneur']}>
-                <CreateOpportunity />
-              </ProtectedRoute>
-            } />
+              {/* Entrepreneur Routes */}
+              <Route path="/entrepreneur/dashboard" element={
+                <ProtectedRoute allowedRoles={['entrepreneur']}>
+                  <EntrepreneurDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/entrepreneur/opportunities/new" element={
+                <ProtectedRoute allowedRoles={['entrepreneur']}>
+                  <CreateOpportunity />
+                </ProtectedRoute>
+              } />
 
-            {/* Investor Routes */}
-            <Route path="/investor/dashboard" element={
-              <ProtectedRoute allowedRoles={['investor']}>
-                <InvestorDashboard />
-              </ProtectedRoute>
-            } />
-            
-            {/* Shared Routes (Investor & Admin) */}
-            <Route path="/opportunities/:id" element={
-              <ProtectedRoute allowedRoles={['investor', 'admin', 'super_admin']}>
-                <OpportunityDetail />
-              </ProtectedRoute>
-            } />
+              {/* Investor Routes */}
+              <Route path="/investor/dashboard" element={
+                <ProtectedRoute allowedRoles={['investor']}>
+                  <InvestorDashboard />
+                </ProtectedRoute>
+              } />
+              
+              {/* Shared Routes (Investor & Admin) */}
+              <Route path="/opportunities/:id" element={
+                <ProtectedRoute allowedRoles={['investor', 'admin', 'super_admin']}>
+                  <OpportunityDetail />
+                </ProtectedRoute>
+              } />
 
-            {/* Admin Routes */}
-            <Route path="/admin/dashboard" element={
-              <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
-                <AdminDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/opportunities/:id/review" element={
-              <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
-                <OpportunityReview />
-              </ProtectedRoute>
-            } />
+              {/* Admin Routes */}
+              <Route path="/admin/dashboard" element={
+                <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/users" element={
+                <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                  <UserManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/investment-pools" element={
+                <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                  <InvestmentPools />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/escrow" element={
+                <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                  <EscrowManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/opportunities/:id/review" element={
+                <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                  <OpportunityReview />
+                </ProtectedRoute>
+              } />
 
-            {/* Catch all */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+              {/* Catch all */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </CurrencyProvider>
     </QueryClientProvider>
   );
 };

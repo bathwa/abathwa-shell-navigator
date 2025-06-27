@@ -1,7 +1,7 @@
-
 import { LogOut, User } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
+import { CurrencySelector } from '@/components/ui/currency-selector'
 
 export const Header = () => {
   const { user, signOut } = useAuthStore()
@@ -19,6 +19,11 @@ export const Header = () => {
         
         {user && (
           <div className="flex items-center space-x-4">
+            <CurrencySelector
+              variant="compact"
+              showLabel={false}
+              className="text-white"
+            />
             <Link 
               to="/profile" 
               className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors"

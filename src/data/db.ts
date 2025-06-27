@@ -1,4 +1,3 @@
-
 import Dexie, { Table } from 'dexie';
 
 export interface Profile {
@@ -171,6 +170,55 @@ export interface InvestmentPool {
   updated_at: string;
 }
 
+export interface CurrencyConversion {
+  id?: number;
+  fromCurrency: string;
+  toCurrency: string;
+  amount: number;
+  convertedAmount: number;
+  rate: number;
+  timestamp: string;
+}
+
+export interface PoolDiscussion {
+  id: string;
+  pool_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PoolObjective {
+  id: string;
+  pool_id: string;
+  title: string;
+  description: string;
+  target_date: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PoolReport {
+  id: string;
+  pool_id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PoolInvestment {
+  id: string;
+  pool_id: string;
+  investor_id: string;
+  amount: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export class AbathwaDexie extends Dexie {
   profiles!: Table<Profile>;
   opportunities!: Table<Opportunity>;
@@ -184,10 +232,15 @@ export class AbathwaDexie extends Dexie {
   ratings_reviews!: Table<RatingReview>;
   announcements!: Table<Announcement>;
   investment_pools!: Table<InvestmentPool>;
+  currency_conversions!: Table<CurrencyConversion>;
+  pool_discussions!: Table<PoolDiscussion>;
+  pool_objectives!: Table<PoolObjective>;
+  pool_reports!: Table<PoolReport>;
+  pool_investments!: Table<PoolInvestment>;
 
   constructor() {
     super('AbathwaCapitalDB');
-    this.version(2).stores({
+    this.version(3).stores({
       profiles: 'id,role',
       opportunities: 'id,entrepreneur_id,status',
       offers: 'id,opportunity_id,investor_id',
@@ -200,6 +253,11 @@ export class AbathwaDexie extends Dexie {
       ratings_reviews: 'id,reviewer_id,target_id,target_type',
       announcements: 'id,created_by',
       investment_pools: 'id,created_by,status',
+      currency_conversions: '++id,fromCurrency,toCurrency,timestamp',
+      pool_discussions: 'id,pool_id,user_id',
+      pool_objectives: 'id,pool_id',
+      pool_reports: 'id,pool_id',
+      pool_investments: 'id,pool_id,investor_id',
     });
   }
 }

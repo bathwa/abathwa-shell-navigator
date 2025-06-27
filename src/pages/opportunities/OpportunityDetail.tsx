@@ -1,10 +1,44 @@
-
-import { Heart, DollarSign, TrendingUp, Building, Calendar, User } from 'lucide-react'
-import { useParams } from 'react-router-dom'
-import { AuthenticatedLayout } from '@/components/Layout/AuthenticatedLayout'
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { CurrencySelector } from '@/components/ui/currency-selector';
+import { useCurrency } from '@/contexts/CurrencyContext';
+import { AuthenticatedLayout } from '@/components/Layout/AuthenticatedLayout';
+import { useAuthStore } from '@/store/authStore';
+import { supabase } from '@/integrations/supabase/client';
+import { 
+  ArrowLeft, 
+  DollarSign, 
+  TrendingUp, 
+  Users, 
+  Target, 
+  Calendar, 
+  MessageSquare, 
+  Eye,
+  Zap,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  BarChart3,
+  Brain,
+  FileText,
+  Building,
+  Heart,
+  User
+} from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const OpportunityDetail = () => {
   const { id } = useParams()
+  const { formatCurrency } = useCurrency()
 
   // Mock data - in real app this would be fetched based on ID
   const opportunity = {
@@ -12,7 +46,7 @@ const OpportunityDetail = () => {
     name: "EcoTech Solutions",
     description: "EcoTech Solutions is revolutionizing environmental monitoring through cutting-edge IoT sensors and AI-powered analytics. Our platform provides real-time insights for businesses to reduce their environmental impact while optimizing operational efficiency.",
     fullDescription: "Our comprehensive solution includes wireless sensor networks, cloud-based data processing, and intuitive dashboards that help organizations track air quality, water usage, energy consumption, and waste generation. With proven ROI in multiple pilot programs, we're ready to scale globally.",
-    amount: "$250,000",
+    amount: 250000, // Changed to number for currency formatting
     roi: "25%",
     industry: "Technology",
     timeline: "6-12 months",
@@ -32,9 +66,9 @@ const OpportunityDetail = () => {
       "Scalability challenges in hardware manufacturing"
     ],
     useOfFunds: [
-      { category: "Product Development", percentage: 40, amount: "$100K" },
-      { category: "Marketing & Sales", percentage: 35, amount: "$87.5K" },
-      { category: "Operations", percentage: 25, amount: "$62.5K" }
+      { category: "Product Development", percentage: 40, amount: 100000 },
+      { category: "Marketing & Sales", percentage: 35, amount: 87500 },
+      { category: "Operations", percentage: 25, amount: 62500 }
     ]
   }
 
@@ -57,7 +91,7 @@ const OpportunityDetail = () => {
               <div className="flex items-center space-x-6">
                 <div className="flex items-center space-x-2">
                   <DollarSign className="text-emerald-500" size={20} />
-                  <span className="text-white font-semibold">{opportunity.amount}</span>
+                  <span className="text-white font-semibold">{formatCurrency(opportunity.amount)}</span>
                   <span className="text-slate-400">sought</span>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -124,7 +158,7 @@ const OpportunityDetail = () => {
                       <span className="text-white">{fund.category}</span>
                     </div>
                     <div className="text-right">
-                      <span className="text-white font-semibold">{fund.amount}</span>
+                      <span className="text-white font-semibold">{formatCurrency(fund.amount)}</span>
                       <span className="text-slate-400 ml-2">({fund.percentage}%)</span>
                     </div>
                   </div>

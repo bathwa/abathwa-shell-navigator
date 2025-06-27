@@ -11,6 +11,7 @@ interface AuthState {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   initialize: () => void;
+  refreshUserProfile: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -77,5 +78,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     });
 
     return () => subscription.unsubscribe();
+  },
+
+  refreshUserProfile: async () => {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) return;
+    set({ user: data.user });
   },
 }));

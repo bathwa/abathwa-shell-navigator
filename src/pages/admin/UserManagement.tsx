@@ -617,6 +617,8 @@ export default function UserManagement() {
             <div className="text-center py-8">
               <div className="text-muted-foreground">Loading users...</div>
             </div>
+          ) : error ? (
+            <div className="text-red-500 text-center my-4">{error}</div>
           ) : filteredUsers.length > 0 ? (
             <div className="space-y-4">
               {filteredUsers.map((user) => (
@@ -690,12 +692,8 @@ export default function UserManagement() {
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No users found</h3>
-              <p className="text-muted-foreground">Try adjusting your search or filters</p>
-            </div>
+          ) : !error && filteredUsers.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">No users found.</div>
           )}
         </CardContent>
       </Card>
@@ -811,6 +809,8 @@ export default function UserManagement() {
         <Shield className="h-4 w-4 mr-2" />
         Audit & Fix User Roles
       </Button>
+
+      <Button variant="outline" onClick={loadUsers} className="mb-4">Refresh Users</Button>
     </div>
   );
 } 

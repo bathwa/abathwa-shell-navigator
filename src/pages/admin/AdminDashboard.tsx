@@ -71,9 +71,12 @@ interface User {
   id: string;
   full_name: string;
   email?: string;
-  role: 'super_admin' | 'admin' | 'entrepreneur' | 'investor';
+  role: 'super_admin' | 'admin' | 'entrepreneur' | 'investor' | 'service_provider';
   created_at: string;
   avatar_url?: string;
+  profile_data_jsonb?: any;
+  is_active?: boolean;
+  last_login?: string;
 }
 
 interface Payment {
@@ -121,6 +124,8 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [error, setError] = useState<string | null>(null);
+
+  const allRoles = ['super_admin', 'admin', 'entrepreneur', 'investor', 'service_provider'] as const;
 
   useEffect(() => {
     loadDashboardData();
@@ -764,7 +769,7 @@ export default function AdminDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {['entrepreneur', 'investor', 'admin', 'super_admin'].map((role) => {
+                    {allRoles.map((role) => {
                       const count = users.filter(u => u.role === role).length;
                       const percentage = users.length > 0 ? (count / users.length) * 100 : 0;
                       

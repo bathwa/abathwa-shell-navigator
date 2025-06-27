@@ -1,11 +1,12 @@
-
-import { Home, TrendingUp, Users, Settings } from 'lucide-react'
-import { Link, useLocation } from 'react-router-dom'
+import { Home, TrendingUp, Users, Settings, ArrowLeft, LogOut } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
+import { Button } from '@/components/ui/button'
 
 export const Navigation = () => {
-  const { user } = useAuthStore()
+  const { user, signOut } = useAuthStore()
   const location = useLocation()
+  const navigate = useNavigate()
 
   if (!user) return null
 
@@ -22,10 +23,12 @@ export const Navigation = () => {
           { to: '/opportunities', icon: TrendingUp, label: 'Browse Opportunities' },
         ]
       case 'admin':
+      case 'super_admin':
         return [
           { to: '/admin/dashboard', icon: Home, label: 'Dashboard' },
           { to: '/admin/users', icon: Users, label: 'User Management' },
-          { to: '/admin/settings', icon: Settings, label: 'Settings' },
+          { to: '/admin/investment-pools', icon: TrendingUp, label: 'Investment Pools' },
+          { to: '/admin/escrow', icon: Settings, label: 'Escrow Management' },
         ]
       default:
         return []
@@ -34,26 +37,65 @@ export const Navigation = () => {
 
   const navItems = getNavItems()
 
+  const handleSignOut = async () => {
+    await signOut()
+    navigate('/')
+  }
+
   return (
     <nav className="bg-slate-800 border-b border-slate-700 px-6 py-3">
-      <div className="flex items-center space-x-6 max-w-7xl mx-auto">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.to
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                isActive 
-                  ? 'bg-emerald-600 text-white' 
-                  : 'text-slate-300 hover:text-white hover:bg-slate-700'
-              }`}
+      <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <div className="flex items-center space-x-6">
+          {/* Back button for non-home pages */}
+          {location.pathname !== '/' && location.pathname !== '/entrepreneur/dashboard' && 
+           location.pathname !== '/investor/dashboard' && location.pathname !== '/admin/dashboard' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(-1)}
+              className="flex items-center space-x-2 text-slate-300 hover:text-white"
             >
-              <item.icon size={20} />
-              <span>{item.label}</span>
-            </Link>
-          )
-        })}
+              <ArrowLeft size={20} />
+              <span>Back</span>
+            </Button>
+          )}
+          
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.to
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                  isActive 
+                    ? 'bg-emerald-600 text-white' 
+                    : 'text-slate-300 hover:text-white hover:bg-slate-700'
+                }`}
+              >
+                <item.icon size={20} />
+                <span>{item.label}</span>
+              </Link>
+            )
+          })}
+        </div>
+        
+        <div className="flex items-center space-x-4">
+          <Link
+            to="/profile"
+            className="text-slate-300 hover:text-white transition-colors"
+          >
+            Profile
+          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSignOut}
+            className="flex items-center space-x-2 text-slate-300 hover:text-white"
+          >
+            <LogOut size={20} />
+            <span>Sign Out</span>
+          </Button>
+        </div>
       </div>
     </nav>
   )

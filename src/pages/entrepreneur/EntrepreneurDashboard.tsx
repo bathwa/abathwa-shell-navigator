@@ -27,7 +27,8 @@ import {
   Calendar,
   Building2,
   Lightbulb,
-  Shield
+  Shield,
+  ArrowLeft
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -115,7 +116,8 @@ export default function EntrepreneurDashboard() {
       // Calculate completed milestones
       let completedMilestones = 0;
       for (const opportunity of opportunitiesData || []) {
-        const milestones = opportunity.team_data_jsonb?.milestones || [];
+        const teamData = opportunity.team_data_jsonb as any;
+        const milestones = teamData?.milestones || [];
         completedMilestones += milestones.filter((m: any) => m.status === 'completed').length;
       }
 
@@ -154,10 +156,10 @@ export default function EntrepreneurDashboard() {
   };
 
   const getRiskLevel = (opportunity: Opportunity) => {
-    const riskAssessment = opportunity.team_data_jsonb?.risk_assessment;
-    if (!riskAssessment) return 'Unknown';
+    const riskAssessment = opportunity.team_data_jsonb as any;
+    if (!riskAssessment?.risk_assessment) return { level: 'Unknown', color: 'secondary' as const };
     
-    const risk = riskAssessment.overallRisk;
+    const risk = riskAssessment.risk_assessment.overallRisk;
     if (risk > 70) return { level: 'High', color: 'destructive' as const };
     if (risk > 40) return { level: 'Medium', color: 'default' as const };
     return { level: 'Low', color: 'secondary' as const };
@@ -204,13 +206,24 @@ export default function EntrepreneurDashboard() {
     <div className="container mx-auto p-6 max-w-7xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Entrepreneur Dashboard</h1>
-          <p className="text-muted-foreground">Manage your investment opportunities and track performance</p>
+        <div className="flex items-center space-x-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/')}
+            className="flex items-center space-x-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Home</span>
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Entrepreneur Dashboard</h1>
+            <p className="text-muted-foreground">Manage your investment opportunities and track performance</p>
+          </div>
         </div>
         
         <Button 
-          onClick={() => navigate('/entrepreneur/create-opportunity')}
+          onClick={() => navigate('/entrepreneur/opportunities/new')}
           className="flex items-center space-x-2"
         >
           <Plus className="h-4 w-4" />
@@ -548,42 +561,42 @@ export default function EntrepreneurDashboard() {
               {opportunities.length > 0 ? (
                 <div className="space-y-4">
                   {opportunities.map((opportunity) => {
-                    const riskAssessment = opportunity.team_data_jsonb?.risk_assessment;
-                    if (!riskAssessment) return null;
+                    const riskAssessment = opportunity.team_data_jsonb as any;
+                    if (!riskAssessment?.risk_assessment) return null;
 
                     return (
                       <div key={opportunity.id} className="border rounded-lg p-4 space-y-3">
                         <div className="flex items-center justify-between">
                           <h4 className="font-medium">{opportunity.name}</h4>
-                          <Badge variant={riskAssessment.overallRisk > 70 ? 'destructive' : riskAssessment.overallRisk > 40 ? 'default' : 'secondary'}>
-                            {riskAssessment.overallRisk}% Risk
+                          <Badge variant={riskAssessment.risk_assessment.overallRisk > 70 ? 'destructive' : riskAssessment.risk_assessment.overallRisk > 40 ? 'default' : 'secondary'}>
+                            {riskAssessment.risk_assessment.overallRisk}% Risk
                           </Badge>
                         </div>
                         
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                           <div>
                             <p className="text-muted-foreground">Financial Risk</p>
-                            <p className="font-medium">{riskAssessment.financialRisk}%</p>
+                            <p className="font-medium">{riskAssessment.risk_assessment.financialRisk}%</p>
                           </div>
                           <div>
                             <p className="text-muted-foreground">Operational Risk</p>
-                            <p className="font-medium">{riskAssessment.operationalRisk}%</p>
+                            <p className="font-medium">{riskAssessment.risk_assessment.operationalRisk}%</p>
                           </div>
                           <div>
                             <p className="text-muted-foreground">Market Risk</p>
-                            <p className="font-medium">{riskAssessment.marketRisk}%</p>
+                            <p className="font-medium">{riskAssessment.risk_assessment.marketRisk}%</p>
                           </div>
                           <div>
                             <p className="text-muted-foreground">Compliance Risk</p>
-                            <p className="font-medium">{riskAssessment.complianceRisk}%</p>
+                            <p className="font-medium">{riskAssessment.risk_assessment.complianceRisk}%</p>
                           </div>
                         </div>
 
-                        {riskAssessment.recommendations && riskAssessment.recommendations.length > 0 && (
+                        {riskAssessment.risk_assessment.recommendations && riskAssessment.risk_assessment.recommendations.length > 0 && (
                           <div className="space-y-2">
                             <p className="text-sm font-medium">Recommendations:</p>
                             <ul className="text-sm text-muted-foreground space-y-1">
-                              {riskAssessment.recommendations.slice(0, 3).map((rec: string, index: number) => (
+                              {riskAssessment.risk_assessment.recommendations.slice(0, 3).map((rec: string, index: number) => (
                                 <li key={index} className="flex items-start space-x-2">
                                   <CheckCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
                                   <span>{rec}</span>

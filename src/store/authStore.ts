@@ -81,8 +81,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   refreshUserProfile: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error) return;
-    set({ user: data.user });
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData.user) return;
+    // Fetch latest profile from profiles table
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', authData.user.id)
+      .single();
+    if (profileError || !profileData) return;
+    // Merge profile data (including role) into user object
+    set({ user: { ...authData.user, ...profileData } });
   },
 }));

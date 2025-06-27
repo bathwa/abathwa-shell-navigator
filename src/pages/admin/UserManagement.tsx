@@ -227,6 +227,11 @@ export default function UserManagement() {
         description: "User updated successfully. Changes will take effect on next login.",
       });
 
+      // If the edited user is the current user, refresh their profile
+      if (selectedUser.id === currentUser?.id) {
+        await refreshUserProfile();
+      }
+
       setIsEditDialogOpen(false);
       setSelectedUser(null);
       loadUsers();

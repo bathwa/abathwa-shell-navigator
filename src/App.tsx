@@ -56,10 +56,8 @@ const App = () => {
 
   const getDashboardRoute = useMemo(() => {
     if (!user) return "/";
-    
-    // Get role from user metadata or profile
-    const userRole = user.user_metadata?.role || user.role || 'entrepreneur';
-    
+    // Prefer role from profile (user.role), fallback to user_metadata
+    const userRole = user.role || user.user_metadata?.role || 'entrepreneur';
     switch (userRole) {
       case 'entrepreneur':
         return "/entrepreneur/dashboard";

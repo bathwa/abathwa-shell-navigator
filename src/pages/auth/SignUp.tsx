@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -9,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuthStore } from '@/store/authStore'
 import { useToast } from '@/hooks/use-toast'
 import { Building, TrendingUp, Users, User } from 'lucide-react'
+import { supabase } from '@/lib/supabaseClient'
 
 const SignUp = () => {
   const [email, setEmail] = useState('')
@@ -47,6 +47,11 @@ const SignUp = () => {
           variant: "destructive",
         })
       } else {
+        // Patch the profiles table with the correct role
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (!userError && userData.user) {
+          await supabase.from('profiles').update({ role }).eq('id', userData.user.id);
+        }
         toast({
           title: "Success!",
           description: "Account created successfully. Please check your email to confirm your account.",

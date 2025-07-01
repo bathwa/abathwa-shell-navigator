@@ -106,7 +106,7 @@ export default function OpportunityDetail() {
         entrepreneur: data.entrepreneur && typeof data.entrepreneur === 'object' && 'full_name' in data.entrepreneur 
           ? data.entrepreneur 
           : null
-      };
+      } as Opportunity;
 
       setOpportunity(processedData);
 

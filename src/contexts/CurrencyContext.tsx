@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState } from 'react';
 
 interface CurrencyContextType {
   currency: 'USD' | 'ZWL';
+  selectedCurrency: 'USD' | 'ZWL';
   setCurrency: (currency: 'USD' | 'ZWL') => void;
   formatCurrency: (amount: number) => string;
 }
@@ -22,7 +23,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   return (
-    <CurrencyContext.Provider value={{ currency, setCurrency, formatCurrency }}>
+    <CurrencyContext.Provider value={{ currency, selectedCurrency: currency, setCurrency, formatCurrency }}>
       {children}
     </CurrencyContext.Provider>
   );

@@ -137,7 +137,7 @@ export default function ServiceProviderDashboard() {
       ]);
 
       // Calculate stats
-      const activeRequests = (requestsData || []).filter(r => r.status === 'open' || r.status === 'in_progress').length;
+      const activeRequests = (requestsData || []).filter(r => r.status === 'published' || r.status === 'in_progress').length;
       const completedTasks = 15; // Mock data
       const totalEarnings = 12500; // Mock data
       const pendingPayments = 3200; // Mock data

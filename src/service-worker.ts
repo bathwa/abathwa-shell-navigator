@@ -8,7 +8,7 @@ const urlsToCache = [
 ];
 
 // Install event
-self.addEventListener('install', (event: ExtendableEvent) => {
+self.addEventListener('install', (event: any) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(urlsToCache))
@@ -16,7 +16,7 @@ self.addEventListener('install', (event: ExtendableEvent) => {
 });
 
 // Fetch event
-self.addEventListener('fetch', (event: FetchEvent) => {
+self.addEventListener('fetch', (event: any) => {
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
@@ -31,7 +31,7 @@ self.addEventListener('fetch', (event: FetchEvent) => {
 });
 
 // Activate event
-self.addEventListener('activate', (event: ExtendableEvent) => {
+self.addEventListener('activate', (event: any) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -58,7 +58,7 @@ async function doBackgroundSync() {
 }
 
 // Push notifications
-self.addEventListener('push', (event: PushEvent) => {
+self.addEventListener('push', (event: any) => {
   const options = {
     body: event.data?.text() || 'New notification',
     icon: '/icon-192x192.png',
@@ -66,15 +66,15 @@ self.addEventListener('push', (event: PushEvent) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification('Abathwa Capital', options)
+    (self as any).registration.showNotification('Abathwa Capital', options)
   );
 });
 
 // Notification click
-self.addEventListener('notificationclick', (event: NotificationEvent) => {
+self.addEventListener('notificationclick', (event: any) => {
   event.notification.close();
   
   event.waitUntil(
-    self.clients.openWindow('/')
+    (self as any).clients.openWindow('/')
   );
 });

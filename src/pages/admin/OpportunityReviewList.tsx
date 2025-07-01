@@ -101,7 +101,7 @@ export default function OpportunityReviewList() {
         entrepreneur: item.entrepreneur && typeof item.entrepreneur === 'object' && 'full_name' in item.entrepreneur 
           ? item.entrepreneur 
           : null
-      }));
+      })) as Opportunity[];
 
       setOpportunities(processedData);
 

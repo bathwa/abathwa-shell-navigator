@@ -33,6 +33,8 @@ interface User {
   updated_at: string;
   avatar_url?: string | null;
   profile_data_jsonb?: any;
+  phone?: string;
+  organization?: string;
 }
 
 interface UserStats {
@@ -178,18 +180,14 @@ export default function UserManagement() {
     try {
       // In a real implementation, this would create a user in auth.users first
       // Then create the profile
-      const { error } = await supabase
-        .from('profiles')
-        .insert({
-          full_name: newUser.full_name,
-          role: newUser.role,
-          profile_data_jsonb: {
-            phone: newUser.phone,
-            organization: newUser.organization
-          }
-        });
-
-      if (error) throw error;
+      // In a real implementation, you would create auth user first and get the ID
+      // For now, we'll show an error since this operation requires backend integration
+      toast({
+        title: "Error",
+        description: "User creation requires backend integration with authentication system.",
+        variant: "destructive",
+      });
+      return;
 
       toast({
         title: "Success",

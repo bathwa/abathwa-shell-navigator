@@ -51,7 +51,7 @@ const SignUp = () => {
         // Patch the profiles table with the correct role
         const { data: userData, error: userError } = await supabase.auth.getUser();
         if (!userError && userData.user) {
-          await supabase.from('profiles').update({ role }).eq('id', userData.user.id);
+          await supabase.from('profiles').update({ role: role as any }).eq('id', userData.user.id);
         }
         toast({
           title: "Success!",

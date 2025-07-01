@@ -87,12 +87,21 @@ const OpportunityReview = () => {
       }
 
       // Handle the case where entrepreneur might be null or have error
-      const processedData = {
+      let processedEntrepreneur = null;
+      const entrepreneur = data.entrepreneur;
+      if (entrepreneur && typeof entrepreneur === 'object') {
+        const ent = entrepreneur as any;
+        processedEntrepreneur = {
+          full_name: ent.full_name || null,
+          avatar_url: ent.avatar_url || null,
+          email: ent.email || null
+        };
+      }
+
+      const processedData: Opportunity = {
         ...data,
-        entrepreneur: data.entrepreneur && typeof data.entrepreneur === 'object' && 'full_name' in data.entrepreneur 
-          ? data.entrepreneur 
-          : null
-      } as Opportunity;
+        entrepreneur: processedEntrepreneur
+      };
 
       setOpportunity(processedData);
 

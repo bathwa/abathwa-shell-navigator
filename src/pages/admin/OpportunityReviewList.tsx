@@ -16,7 +16,9 @@ import {
   TrendingUp,
   Calendar,
   User,
-  AlertCircle
+  AlertCircle,
+  DollarSign,
+  Building
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -96,12 +98,22 @@ export default function OpportunityReviewList() {
       }
 
       // Process the data to handle potential null/error values
-      const processedData = (data || []).map(item => ({
-        ...item,
-        entrepreneur: item.entrepreneur && typeof item.entrepreneur === 'object' && 'full_name' in item.entrepreneur 
-          ? item.entrepreneur 
-          : null
-      })) as Opportunity[];
+      const processedData = (data || []).map(item => {
+        let processedEntrepreneur = null;
+        const entrepreneur = item.entrepreneur;
+        if (entrepreneur && typeof entrepreneur === 'object') {
+          const ent = entrepreneur as any;
+          processedEntrepreneur = {
+            full_name: ent.full_name || null,
+            avatar_url: ent.avatar_url || null,
+            email: ent.email || null
+          };
+        }
+        return {
+          ...item,
+          entrepreneur: processedEntrepreneur
+        };
+      }) as Opportunity[];
 
       setOpportunities(processedData);
 

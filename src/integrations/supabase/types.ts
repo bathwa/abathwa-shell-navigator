@@ -1179,7 +1179,12 @@ export type Database = {
         | "funds_in_escrow"
         | "finalized"
         | "cancelled"
-      app_role: "super_admin" | "admin" | "entrepreneur" | "investor"
+      app_role:
+        | "super_admin"
+        | "admin"
+        | "entrepreneur"
+        | "investor"
+        | "service_provider"
       audit_action_type:
         | "create"
         | "read"
@@ -1361,7 +1366,13 @@ export const Constants = {
         "finalized",
         "cancelled",
       ],
-      app_role: ["super_admin", "admin", "entrepreneur", "investor"],
+      app_role: [
+        "super_admin",
+        "admin",
+        "entrepreneur",
+        "investor",
+        "service_provider",
+      ],
       audit_action_type: [
         "create",
         "read",

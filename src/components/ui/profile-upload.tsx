@@ -1,29 +1,23 @@
-import React, { useState, useRef } from 'react';
+
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Camera, Upload, X, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Upload, Camera, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuthStore } from '@/store/authStore';
 
 interface ProfileUploadProps {
-  currentAvatarUrl?: string | null;
-  onAvatarUpdate?: (url: string) => void;
+  currentAvatarUrl?: string;
+  onAvatarUpdate: (url: string) => void;
   size?: 'sm' | 'md' | 'lg';
-  className?: string;
 }
 
 export const ProfileUpload: React.FC<ProfileUploadProps> = ({
   currentAvatarUrl,
   onAvatarUpdate,
-  size = 'md',
-  className = ''
+  size = 'md'
 }) => {
-  const { user } = useAuthStore();
+  const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
-  const [isUploading, setIsUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(currentAvatarUrl || null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sizeClasses = {
     sm: 'w-16 h-16',
@@ -31,196 +25,103 @@ export const ProfileUpload: React.FC<ProfileUploadProps> = ({
     lg: 'w-32 h-32'
   };
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user) return;
-
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      toast({
-        title: "Invalid file type",
-        description: "Please select a JPEG, PNG, or WebP image.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
-      toast({
-        title: "File too large",
-        description: "Please select an image smaller than 5MB.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      setIsUploading(true);
+      setUploading(true);
 
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPreviewUrl(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+      if (!event.target.files || event.target.files.length === 0) {
+        throw new Error('You must select an image to upload.');
+      }
 
-      // Upload to Supabase Storage
+      const file = event.target.files[0];
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
 
+      // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
+        .upload(filePath, file);
 
       if (uploadError) {
         throw uploadError;
       }
 
       // Get public URL
-      const { data: { publicUrl } } = supabase.storage
+      const { data } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
-      // Update user profile
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', user.id);
-
-      if (updateError) {
-        throw updateError;
-      }
+      onAvatarUpdate(data.publicUrl);
 
       toast({
         title: "Success",
-        description: "Profile picture updated successfully.",
+        description: "Profile picture updated successfully!",
       });
 
-      onAvatarUpdate?.(publicUrl);
-
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      toast({
-        title: "Upload failed",
-        description: "Failed to upload profile picture. Please try again.",
-        variant: "destructive",
-      });
-      setPreviewUrl(currentAvatarUrl || null);
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleRemoveAvatar = async () => {
-    if (!user) return;
-
-    try {
-      setIsUploading(true);
-
-      // Remove from profile
-      const { error } = await supabase
-        .from('profiles')
-        .update({ avatar_url: null })
-        .eq('id', user.id);
-
-      if (error) throw error;
-
-      setPreviewUrl(null);
-      onAvatarUpdate?.('');
-
-      toast({
-        title: "Success",
-        description: "Profile picture removed.",
-      });
-
-    } catch (error) {
-      console.error('Error removing avatar:', error);
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to remove profile picture.",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
-      setIsUploading(false);
+      setUploading(false);
     }
-  };
-
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
   };
 
   return (
-    <div className={`relative inline-block ${className}`}>
-      <Avatar className={`${sizeClasses[size]} relative group`}>
-        <AvatarImage 
-          src={previewUrl || undefined} 
-          alt="Profile picture"
-          className="object-cover"
-        />
-        <AvatarFallback className="bg-slate-700 text-white">
-          <User className="h-1/2 w-1/2" />
-        </AvatarFallback>
-        
-        {/* Upload overlay */}
-        <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={triggerFileInput}
-            disabled={isUploading}
-            className="text-white hover:text-white hover:bg-white/20"
-          >
-            {isUploading ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-            ) : (
-              <Camera className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-      </Avatar>
-
-      {/* Action buttons */}
-      <div className="flex justify-center mt-2 space-x-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={triggerFileInput}
-          disabled={isUploading}
-          className="text-xs"
-        >
-          <Upload className="h-3 w-3 mr-1" />
-          {previewUrl ? 'Change' : 'Upload'}
-        </Button>
-        
-        {previewUrl && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRemoveAvatar}
-            disabled={isUploading}
-            className="text-xs text-red-500 hover:text-red-600"
-          >
-            <X className="h-3 w-3 mr-1" />
-            Remove
-          </Button>
+    <div className="flex flex-col items-center space-y-4">
+      <div className={`${sizeClasses[size]} rounded-full border-2 border-gray-200 overflow-hidden bg-gray-50`}>
+        {currentAvatarUrl ? (
+          <img
+            src={currentAvatarUrl}
+            alt="Avatar"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <User className="w-1/2 h-1/2 text-gray-400" />
+          </div>
         )}
       </div>
 
-      {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/jpeg,image/jpg,image/png,image/webp"
-        onChange={handleFileSelect}
-        className="hidden"
-      />
+      <div className="flex flex-col items-center space-y-2">
+        <label htmlFor="avatar-upload">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={uploading}
+            className="cursor-pointer"
+            asChild
+          >
+            <span>
+              {uploading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Camera className="w-4 h-4 mr-2" />
+                  Change Photo
+                </>
+              )}
+            </span>
+          </Button>
+        </label>
+        <input
+          id="avatar-upload"
+          type="file"
+          accept="image/*"
+          onChange={uploadAvatar}
+          className="hidden"
+          disabled={uploading}
+        />
+        <p className="text-xs text-gray-500 text-center">
+          JPG, PNG or GIF (max 5MB)
+        </p>
+      </div>
     </div>
   );
-}; 
+};

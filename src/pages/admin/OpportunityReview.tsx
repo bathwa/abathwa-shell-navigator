@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { CheckCircle, XCircle, DollarSign, TrendingUp, Building, Calendar, User, FileText, ArrowLeft, AlertCircle, RefreshCw } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { AuthenticatedLayout } from '@/components/Layout/AuthenticatedLayout';
+import { ModernLayout } from '@/components/Layout/ModernLayout';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -30,7 +30,7 @@ interface Opportunity {
     full_name: string | null;
     avatar_url?: string | null;
     email?: string | null;
-  };
+  } | null;
 }
 
 const OpportunityReview = () => {
@@ -86,7 +86,15 @@ const OpportunityReview = () => {
         return;
       }
 
-      setOpportunity(data);
+      // Handle the case where entrepreneur might be null or have error
+      const processedData = {
+        ...data,
+        entrepreneur: data.entrepreneur && typeof data.entrepreneur === 'object' && 'full_name' in data.entrepreneur 
+          ? data.entrepreneur 
+          : null
+      };
+
+      setOpportunity(processedData);
 
     } catch (error) {
       console.error('Error loading opportunity:', error);
@@ -186,20 +194,20 @@ const OpportunityReview = () => {
 
   if (loading) {
     return (
-      <AuthenticatedLayout>
+      <ModernLayout>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
             <div className="text-lg">Loading opportunity details...</div>
           </div>
         </div>
-      </AuthenticatedLayout>
+      </ModernLayout>
     );
   }
 
   if (error || !opportunity) {
     return (
-      <AuthenticatedLayout>
+      <ModernLayout>
         <div className="container mx-auto px-4 py-8">
           <div className="mb-8">
             <Button 
@@ -225,7 +233,7 @@ const OpportunityReview = () => {
             </div>
           </div>
         </div>
-      </AuthenticatedLayout>
+      </ModernLayout>
     );
   }
 
@@ -235,7 +243,7 @@ const OpportunityReview = () => {
   const profitabilityData = opportunity.profitability_data_jsonb as any;
 
   return (
-    <AuthenticatedLayout>
+    <ModernLayout>
       <div className="container mx-auto px-4 py-8">
         {/* Back Button */}
         <Button 
@@ -447,36 +455,6 @@ const OpportunityReview = () => {
               </CardContent>
             </Card>
 
-            {/* Review Checklist */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <FileText className="h-5 w-5" />
-                  <span>Review Checklist</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {[
-                    "Business plan completeness",
-                    "Financial projections accuracy",
-                    "Market opportunity validation",
-                    "Team credentials verification",
-                    "Legal documentation review",
-                    "Due diligence completed"
-                  ].map((item, index) => (
-                    <label key={index} className="flex items-center space-x-3">
-                      <input 
-                        type="checkbox" 
-                        className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary"
-                      />
-                      <span className="text-sm">{item}</span>
-                    </label>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Admin Notes */}
             <Card>
               <CardHeader>
@@ -525,7 +503,7 @@ const OpportunityReview = () => {
           </div>
         </div>
       </div>
-    </AuthenticatedLayout>
+    </ModernLayout>
   );
 };
 

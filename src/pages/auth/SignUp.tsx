@@ -1,3 +1,4 @@
+
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -8,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuthStore } from '@/store/authStore'
 import { useToast } from '@/hooks/use-toast'
 import { Building, TrendingUp, Users, User } from 'lucide-react'
-import { supabase } from '@/lib/supabaseClient'
+import { supabase } from '@/integrations/supabase/client'
 
 const SignUp = () => {
   const [email, setEmail] = useState('')

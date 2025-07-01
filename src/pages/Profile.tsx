@@ -1,7 +1,8 @@
+
 import { User, Mail, Briefcase, Edit, Save, ArrowLeft } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AuthenticatedLayout } from '@/components/Layout/AuthenticatedLayout'
+import { ModernLayout } from '@/components/Layout/ModernLayout'
 import { useAuthStore } from '@/store/authStore'
 import { ProfileUpload } from '@/components/ui/profile-upload'
 import { Button } from '@/components/ui/button'
@@ -10,6 +11,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
+
+interface ProfileData {
+  company?: string;
+  bio?: string;
+  location?: string;
+  phone?: string;
+}
 
 const Profile = () => {
   const { user } = useAuthStore()
@@ -49,14 +57,15 @@ const Profile = () => {
       if (error) throw error
 
       if (data) {
+        const profileDataJsonb = data.profile_data_jsonb as ProfileData | null
         setProfileData({
           name: data.full_name || user.user_metadata?.full_name || '',
           email: user.email || '',
           role: data.role || user.user_metadata?.role || '',
-          company: data.profile_data_jsonb?.company || '',
-          bio: data.profile_data_jsonb?.bio || '',
-          location: data.profile_data_jsonb?.location || '',
-          phone: data.profile_data_jsonb?.phone || '',
+          company: profileDataJsonb?.company || '',
+          bio: profileDataJsonb?.bio || '',
+          location: profileDataJsonb?.location || '',
+          phone: profileDataJsonb?.phone || '',
           avatar_url: data.avatar_url || ''
         })
       }
@@ -130,19 +139,19 @@ const Profile = () => {
 
   if (isLoading) {
     return (
-      <AuthenticatedLayout>
+      <ModernLayout>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
             <div className="text-lg">Loading profile...</div>
           </div>
         </div>
-      </AuthenticatedLayout>
+      </ModernLayout>
     )
   }
 
   return (
-    <AuthenticatedLayout>
+    <ModernLayout>
       <div className="max-w-4xl mx-auto space-y-8 p-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -210,7 +219,7 @@ const Profile = () => {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Full Name
                   </label>
                   {isEditing ? (
@@ -222,35 +231,35 @@ const Profile = () => {
                       className="w-full"
                     />
                   ) : (
-                    <div className="flex items-center space-x-2 p-3 bg-slate-700 rounded-lg">
-                      <User className="text-slate-400" size={20} />
-                      <span className="text-white">{profileData.name || 'Not specified'}</span>
+                    <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
+                      <User className="text-gray-400" size={20} />
+                      <span className="text-gray-900">{profileData.name || 'Not specified'}</span>
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Email Address
                   </label>
-                  <div className="flex items-center space-x-2 p-3 bg-slate-700 rounded-lg">
-                    <Mail className="text-slate-400" size={20} />
-                    <span className="text-white">{profileData.email}</span>
+                  <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
+                    <Mail className="text-gray-400" size={20} />
+                    <span className="text-gray-900">{profileData.email}</span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Role
                   </label>
-                  <div className="flex items-center space-x-2 p-3 bg-slate-700 rounded-lg">
-                    <Briefcase className="text-slate-400" size={20} />
-                    <span className="text-white capitalize">{profileData.role}</span>
+                  <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
+                    <Briefcase className="text-gray-400" size={20} />
+                    <span className="text-gray-900 capitalize">{profileData.role}</span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Company
                   </label>
                   {isEditing ? (
@@ -263,14 +272,14 @@ const Profile = () => {
                       placeholder="Your company name"
                     />
                   ) : (
-                    <div className="p-3 bg-slate-700 rounded-lg">
-                      <span className="text-white">{profileData.company || 'Not specified'}</span>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-900">{profileData.company || 'Not specified'}</span>
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Location
                   </label>
                   {isEditing ? (
@@ -283,14 +292,14 @@ const Profile = () => {
                       placeholder="City, Country"
                     />
                   ) : (
-                    <div className="p-3 bg-slate-700 rounded-lg">
-                      <span className="text-white">{profileData.location || 'Not specified'}</span>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-900">{profileData.location || 'Not specified'}</span>
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Phone Number
                   </label>
                   {isEditing ? (
@@ -303,8 +312,8 @@ const Profile = () => {
                       placeholder="+1 (555) 123-4567"
                     />
                   ) : (
-                    <div className="p-3 bg-slate-700 rounded-lg">
-                      <span className="text-white">{profileData.phone || 'Not specified'}</span>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-900">{profileData.phone || 'Not specified'}</span>
                     </div>
                   )}
                 </div>
@@ -312,7 +321,7 @@ const Profile = () => {
 
               {/* Bio */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Bio
                 </label>
                 {isEditing ? (
@@ -325,8 +334,8 @@ const Profile = () => {
                     placeholder="Tell us about yourself and your background..."
                   />
                 ) : (
-                  <div className="p-3 bg-slate-700 rounded-lg">
-                    <span className="text-white">{profileData.bio || 'No bio provided'}</span>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-900">{profileData.bio || 'No bio provided'}</span>
                   </div>
                 )}
               </div>
@@ -352,7 +361,7 @@ const Profile = () => {
           </CardContent>
         </Card>
       </div>
-    </AuthenticatedLayout>
+    </ModernLayout>
   )
 }
 

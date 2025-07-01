@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { AuthenticatedLayout } from '@/components/Layout/AuthenticatedLayout';
+import { ModernLayout } from '@/components/Layout/ModernLayout';
 import { 
   FileText, 
   Clock, 
@@ -37,7 +38,7 @@ interface Opportunity {
     full_name: string | null;
     avatar_url?: string | null;
     email?: string | null;
-  };
+  } | null;
 }
 
 interface ReviewStats {
@@ -94,14 +95,21 @@ export default function OpportunityReviewList() {
         return;
       }
 
-      const opportunitiesData = data || [];
-      setOpportunities(opportunitiesData);
+      // Process the data to handle potential null/error values
+      const processedData = (data || []).map(item => ({
+        ...item,
+        entrepreneur: item.entrepreneur && typeof item.entrepreneur === 'object' && 'full_name' in item.entrepreneur 
+          ? item.entrepreneur 
+          : null
+      }));
+
+      setOpportunities(processedData);
 
       // Calculate stats from real data
-      const pendingReview = opportunitiesData.filter(o => o.status === 'pending_review').length;
-      const approved = opportunitiesData.filter(o => o.status === 'published').length;
-      const rejected = opportunitiesData.filter(o => o.status === 'rejected').length;
-      const totalOpportunities = opportunitiesData.length;
+      const pendingReview = processedData.filter(o => o.status === 'pending_review').length;
+      const approved = processedData.filter(o => o.status === 'published').length;
+      const rejected = processedData.filter(o => o.status === 'rejected').length;
+      const totalOpportunities = processedData.length;
 
       setStats({
         pendingReview,
@@ -165,20 +173,20 @@ export default function OpportunityReviewList() {
 
   if (loading) {
     return (
-      <AuthenticatedLayout>
+      <ModernLayout>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
             <div className="text-lg">Loading opportunities...</div>
           </div>
         </div>
-      </AuthenticatedLayout>
+      </ModernLayout>
     );
   }
 
   if (error) {
     return (
-      <AuthenticatedLayout>
+      <ModernLayout>
         <div className="container mx-auto px-4 py-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">Opportunity Review</h1>
@@ -196,12 +204,12 @@ export default function OpportunityReviewList() {
             </div>
           </div>
         </div>
-      </AuthenticatedLayout>
+      </ModernLayout>
     );
   }
 
   return (
-    <AuthenticatedLayout>
+    <ModernLayout>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex justify-between items-center">
           <div>
@@ -268,145 +276,147 @@ export default function OpportunityReviewList() {
           </Card>
         </div>
 
-        <Tabs defaultValue="pending" className="space-y-6">
+        <Tabs defaultValue="published" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="pending">Pending Review</TabsTrigger>
             <TabsTrigger value="published">Published</TabsTrigger>
-            <TabsTrigger value="rejected">Rejected</TabsTrigger>
+            <TabsTrigger value="draft">Draft</TabsTrigger>
+            <TabsTrigger value="rejected">Suspended/Removed</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="pending" className="space-y-6">
+          <TabsContent value="published" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Pending Review</CardTitle>
-                <CardDescription>Opportunities awaiting admin approval</CardDescription>
+                <CardTitle>Published Opportunities</CardTitle>
+                <CardDescription>Live opportunities available for investment</CardDescription>
               </CardHeader>
               <CardContent>
-                {opportunities.filter(o => o.status === 'pending_review').length > 0 ? (
+                {opportunities.filter(o => o.status === 'published').length > 0 ? (
                   <div className="space-y-4">
-                    {opportunities.filter(o => o.status === 'pending_review').map((opportunity) => (
-                      <div key={opportunity.id} className="border rounded-lg p-6 space-y-4" data-testid="opportunity-item">
+                    {opportunities.filter(o => o.status === 'published').map((opportunity) => (
+                      <div key={opportunity.id} className="border rounded-lg p-6 space-y-4">
                         <div className="flex items-start justify-between">
                           <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-3">
                               <h3 className="text-lg font-semibold">{opportunity.name}</h3>
                               {getStatusBadge(opportunity.status)}
                             </div>
-                            <p className="text-muted-foreground">{opportunity.description}</p>
-                            <div className="flex items-center space-x-4 text-sm">
+                            <p className="text-muted-foreground text-sm line-clamp-2">
+                              {opportunity.description || 'No description available'}
+                            </p>
+                            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                               <span className="flex items-center space-x-1">
-                                <TrendingUp className="h-4 w-4" />
+                                <DollarSign className="h-3 w-3" />
                                 <span>{formatCurrency(opportunity.amount_sought)}</span>
                               </span>
                               {opportunity.expected_roi && (
                                 <span className="flex items-center space-x-1">
-                                  <TrendingUp className="h-4 w-4" />
+                                  <TrendingUp className="h-3 w-3" />
                                   <span>{opportunity.expected_roi}% ROI</span>
                                 </span>
                               )}
                               <span className="flex items-center space-x-1">
-                                <Calendar className="h-4 w-4" />
-                                <span>{opportunity.created_at ? new Date(opportunity.created_at).toLocaleDateString() : 'N/A'}</span>
+                                <Building className="h-3 w-3" />
+                                <span>{opportunity.industry || 'N/A'}</span>
                               </span>
                               <span className="flex items-center space-x-1">
-                                <User className="h-4 w-4" />
-                                <span>{opportunity.entrepreneur?.full_name || 'Unknown'}</span>
+                                <Calendar className="h-3 w-3" />
+                                <span>{opportunity.created_at ? new Date(opportunity.created_at).toLocaleDateString() : 'N/A'}</span>
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-2 text-sm">
+                              <User className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-muted-foreground">
+                                By {opportunity.entrepreneur?.full_name || 'Unknown Entrepreneur'}
                               </span>
                             </div>
                           </div>
-                          
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate(`/opportunities/${opportunity.id}`)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              onClick={() => handleReview(opportunity.id)}
-                              data-testid="review-opportunity"
-                            >
-                              Review
-                            </Button>
-                          </div>
+                          <Button
+                            onClick={() => handleReview(opportunity.id)}
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center space-x-2"
+                          >
+                            <Eye className="h-4 w-4" />
+                            <span>Review</span>
+                          </Button>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <CheckCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No pending reviews</h3>
-                    <p className="text-muted-foreground mb-4">
-                      All opportunities have been reviewed
-                    </p>
+                    <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-muted-foreground">No published opportunities</p>
                   </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="published" className="space-y-6">
+          <TabsContent value="draft" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Published Opportunities</CardTitle>
-                <CardDescription>Successfully published investment opportunities</CardDescription>
+                <CardTitle>Draft Opportunities</CardTitle>
+                <CardDescription>Opportunities in draft status</CardDescription>
               </CardHeader>
               <CardContent>
-                {opportunities.filter(o => o.status === 'published').length > 0 ? (
+                {opportunities.filter(o => o.status === 'draft').length > 0 ? (
                   <div className="space-y-4">
-                    {opportunities.filter(o => o.status === 'published').map((opportunity) => (
-                      <div key={opportunity.id} className="border rounded-lg p-6 space-y-4" data-testid="opportunity-item">
+                    {opportunities.filter(o => o.status === 'draft').map((opportunity) => (
+                      <div key={opportunity.id} className="border rounded-lg p-6 space-y-4">
                         <div className="flex items-start justify-between">
                           <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-3">
                               <h3 className="text-lg font-semibold">{opportunity.name}</h3>
                               {getStatusBadge(opportunity.status)}
                             </div>
-                            <p className="text-muted-foreground">{opportunity.description}</p>
-                            <div className="flex items-center space-x-4 text-sm">
+                            <p className="text-muted-foreground text-sm line-clamp-2">
+                              {opportunity.description || 'No description available'}
+                            </p>
+                            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                               <span className="flex items-center space-x-1">
-                                <TrendingUp className="h-4 w-4" />
+                                <DollarSign className="h-3 w-3" />
                                 <span>{formatCurrency(opportunity.amount_sought)}</span>
                               </span>
                               {opportunity.expected_roi && (
                                 <span className="flex items-center space-x-1">
-                                  <TrendingUp className="h-4 w-4" />
+                                  <TrendingUp className="h-3 w-3" />
                                   <span>{opportunity.expected_roi}% ROI</span>
                                 </span>
                               )}
                               <span className="flex items-center space-x-1">
-                                <Calendar className="h-4 w-4" />
-                                <span>{opportunity.created_at ? new Date(opportunity.created_at).toLocaleDateString() : 'N/A'}</span>
+                                <Building className="h-3 w-3" />
+                                <span>{opportunity.industry || 'N/A'}</span>
                               </span>
                               <span className="flex items-center space-x-1">
-                                <User className="h-4 w-4" />
-                                <span>{opportunity.entrepreneur?.full_name || 'Unknown'}</span>
+                                <Calendar className="h-3 w-3" />
+                                <span>{opportunity.created_at ? new Date(opportunity.created_at).toLocaleDateString() : 'N/A'}</span>
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-2 text-sm">
+                              <User className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-muted-foreground">
+                                By {opportunity.entrepreneur?.full_name || 'Unknown Entrepreneur'}
                               </span>
                             </div>
                           </div>
-                          
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate(`/opportunities/${opportunity.id}`)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <Button
+                            onClick={() => handleReview(opportunity.id)}
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center space-x-2"
+                          >
+                            <Eye className="h-4 w-4" />
+                            <span>Review</span>
+                          </Button>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <CheckCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No published opportunities</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Published opportunities will appear here
-                    </p>
+                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-muted-foreground">No draft opportunities</p>
                   </div>
                 )}
               </CardContent>
@@ -416,63 +426,67 @@ export default function OpportunityReviewList() {
           <TabsContent value="rejected" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Rejected Opportunities</CardTitle>
-                <CardDescription>Opportunities that were not approved</CardDescription>
+                <CardTitle>Suspended/Removed Opportunities</CardTitle>
+                <CardDescription>Opportunities that have been suspended or removed</CardDescription>
               </CardHeader>
               <CardContent>
                 {opportunities.filter(o => o.status === 'rejected').length > 0 ? (
                   <div className="space-y-4">
                     {opportunities.filter(o => o.status === 'rejected').map((opportunity) => (
-                      <div key={opportunity.id} className="border rounded-lg p-6 space-y-4" data-testid="opportunity-item">
+                      <div key={opportunity.id} className="border rounded-lg p-6 space-y-4 bg-red-50">
                         <div className="flex items-start justify-between">
                           <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-3">
                               <h3 className="text-lg font-semibold">{opportunity.name}</h3>
                               {getStatusBadge(opportunity.status)}
                             </div>
-                            <p className="text-muted-foreground">{opportunity.description}</p>
-                            <div className="flex items-center space-x-4 text-sm">
+                            <p className="text-muted-foreground text-sm line-clamp-2">
+                              {opportunity.description || 'No description available'}
+                            </p>
+                            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                               <span className="flex items-center space-x-1">
-                                <TrendingUp className="h-4 w-4" />
+                                <DollarSign className="h-3 w-3" />
                                 <span>{formatCurrency(opportunity.amount_sought)}</span>
                               </span>
                               {opportunity.expected_roi && (
                                 <span className="flex items-center space-x-1">
-                                  <TrendingUp className="h-4 w-4" />
+                                  <TrendingUp className="h-3 w-3" />
                                   <span>{opportunity.expected_roi}% ROI</span>
                                 </span>
                               )}
                               <span className="flex items-center space-x-1">
-                                <Calendar className="h-4 w-4" />
-                                <span>{opportunity.created_at ? new Date(opportunity.created_at).toLocaleDateString() : 'N/A'}</span>
+                                <Building className="h-3 w-3" />
+                                <span>{opportunity.industry || 'N/A'}</span>
                               </span>
                               <span className="flex items-center space-x-1">
-                                <User className="h-4 w-4" />
-                                <span>{opportunity.entrepreneur?.full_name || 'Unknown'}</span>
+                                <Calendar className="h-3 w-3" />
+                                <span>{opportunity.created_at ? new Date(opportunity.created_at).toLocaleDateString() : 'N/A'}</span>
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-2 text-sm">
+                              <User className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-muted-foreground">
+                                By {opportunity.entrepreneur?.full_name || 'Unknown Entrepreneur'}
                               </span>
                             </div>
                           </div>
-                          
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate(`/opportunities/${opportunity.id}`)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <Button
+                            onClick={() => handleReview(opportunity.id)}
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center space-x-2"
+                          >
+                            <Eye className="h-4 w-4" />
+                            <span>Review</span>
+                          </Button>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <XCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No rejected opportunities</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Rejected opportunities will appear here
-                    </p>
+                    <XCircle className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-muted-foreground">No suspended or removed opportunities</p>
                   </div>
                 )}
               </CardContent>
@@ -480,6 +494,6 @@ export default function OpportunityReviewList() {
           </TabsContent>
         </Tabs>
       </div>
-    </AuthenticatedLayout>
+    </ModernLayout>
   );
-} 
+}

@@ -1,89 +1,37 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { currencyService, type Currency } from '../services/currencyService';
+
+import React, { createContext, useContext, useState } from 'react';
 
 interface CurrencyContextType {
-  selectedCurrency: string;
-  setSelectedCurrency: (currency: string) => void;
-  currencies: Currency[];
-  formatCurrency: (amount: number, currencyCode?: string) => string;
-  convertCurrency: (amount: number, fromCurrency: string, toCurrency: string) => number;
-  updateExchangeRates: () => Promise<void>;
-  isUpdatingRates: boolean;
+  currency: 'USD' | 'ZWL';
+  setCurrency: (currency: 'USD' | 'ZWL') => void;
+  formatCurrency: (amount: number) => string;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
-interface CurrencyProviderProps {
-  children: ReactNode;
-}
+export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [currency, setCurrency] = useState<'USD' | 'ZWL'>('USD');
 
-export function CurrencyProvider({ children }: CurrencyProviderProps) {
-  const [selectedCurrency, setSelectedCurrencyState] = useState<string>('USD');
-  const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [isUpdatingRates, setIsUpdatingRates] = useState(false);
-
-  useEffect(() => {
-    // Initialize currency service
-    const initializeCurrency = () => {
-      const availableCurrencies = currencyService.getCurrencies();
-      setCurrencies(availableCurrencies);
-      
-      const userPreferred = currencyService.getUserPreferredCurrency();
-      setSelectedCurrencyState(userPreferred);
-    };
-
-    initializeCurrency();
-  }, []);
-
-  const setSelectedCurrency = (currencyCode: string) => {
-    if (currencyService.isValidCurrency(currencyCode)) {
-      setSelectedCurrencyState(currencyCode);
-      currencyService.setUserPreferredCurrency(currencyCode);
-    }
-  };
-
-  const formatCurrency = (amount: number, currencyCode?: string) => {
-    return currencyService.formatCurrency(amount, currencyCode || selectedCurrency);
-  };
-
-  const convertCurrency = (amount: number, fromCurrency: string, toCurrency: string) => {
-    return currencyService.convertCurrency(amount, fromCurrency, toCurrency);
-  };
-
-  const updateExchangeRates = async () => {
-    setIsUpdatingRates(true);
-    try {
-      await currencyService.updateExchangeRates();
-      // Refresh currencies to show updated rates
-      setCurrencies(currencyService.getCurrencies());
-    } catch (error) {
-      console.error('Failed to update exchange rates:', error);
-    } finally {
-      setIsUpdatingRates(false);
-    }
-  };
-
-  const value: CurrencyContextType = {
-    selectedCurrency,
-    setSelectedCurrency,
-    currencies,
-    formatCurrency,
-    convertCurrency,
-    updateExchangeRates,
-    isUpdatingRates,
+  const formatCurrency = (amount: number) => {
+    const formatter = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 2,
+    });
+    return formatter.format(amount);
   };
 
   return (
-    <CurrencyContext.Provider value={value}>
+    <CurrencyContext.Provider value={{ currency, setCurrency, formatCurrency }}>
       {children}
     </CurrencyContext.Provider>
   );
-}
+};
 
-export function useCurrency() {
+export const useCurrency = () => {
   const context = useContext(CurrencyContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useCurrency must be used within a CurrencyProvider');
   }
   return context;
-} 
+};

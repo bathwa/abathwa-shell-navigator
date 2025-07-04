@@ -8,6 +8,8 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { AuthenticatedLayout } from '@/components/Layout/AuthenticatedLayout';
+import { ServiceRequestForm } from '@/components/ServiceManagement/ServiceRequestForm';
+import { ServiceRequestsList } from '@/components/ServiceManagement/ServiceRequestsList';
 import { 
   Plus, 
   TrendingUp, 
@@ -29,7 +31,8 @@ import {
   Building2,
   Lightbulb,
   Shield,
-  ArrowLeft
+  ArrowLeft,
+  Briefcase
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -77,6 +80,7 @@ export default function EntrepreneurDashboard() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [currentTab, setCurrentTab] = useState('overview');
+  const [showServiceRequestForm, setShowServiceRequestForm] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -215,21 +219,47 @@ export default function EntrepreneurDashboard() {
           </div>
         </div>
 
-        {/* Action Buttons Row (Scrollable on mobile) */}
-        {opportunities.length > 0 && (
-          <div className="w-full overflow-x-auto mb-4">
-            <div className="flex flex-nowrap gap-2 min-w-[220px]" style={{ WebkitOverflowScrolling: 'touch' }}>
-              {/* Example action buttons, replace with actual actions as needed */}
-              <Button className="flex-shrink-0">Action 1</Button>
-              <Button className="flex-shrink-0">Action 2</Button>
-              <Button className="flex-shrink-0">Action 3</Button>
-              {opportunities.length > 3 && <Button className="flex-shrink-0">More</Button>}
-            </div>
-          </div>
-        )}
+        {/* Action Buttons Row */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+          <Button 
+            onClick={() => navigate('/entrepreneur/opportunities/new')}
+            className="flex items-center space-x-2"
+            size="lg"
+          >
+            <Plus className="h-5 w-5" />
+            <span>Create New Opportunity</span>
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => {/* TODO: Implement observer onboarding */}}
+            className="flex items-center space-x-2"
+            size="lg"
+          >
+            <Users className="h-5 w-5" />
+            <span>Onboard Observers</span>
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => navigate('/opportunities/list')}
+            className="flex items-center space-x-2"
+            size="lg"
+          >
+            <Eye className="h-5 w-5" />
+            <span>Browse Market</span>
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => setShowServiceRequestForm(true)}
+            className="flex items-center space-x-2"
+            size="lg"
+          >
+            <Briefcase className="h-5 w-5" />
+            <span>Request Services</span>
+          </Button>
+        </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full mb-8">
           <Card data-testid="total-opportunities">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Opportunities</CardTitle>
@@ -285,10 +315,11 @@ export default function EntrepreneurDashboard() {
           </Card>
         </div>
 
-        <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-6 w-full">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
+            <TabsTrigger value="services">Services</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="insights">AI Insights</TabsTrigger>
           </TabsList>
@@ -480,6 +511,11 @@ export default function EntrepreneurDashboard() {
             </Card>
           </TabsContent>
 
+          {/* Services Tab */}
+          <TabsContent value="services" className="space-y-6">
+            <ServiceRequestsList />
+          </TabsContent>
+
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -617,6 +653,12 @@ export default function EntrepreneurDashboard() {
             </Card>
           </TabsContent>
         </Tabs>
+        
+        {/* Service Request Form Modal */}
+        <ServiceRequestForm 
+          open={showServiceRequestForm} 
+          onOpenChange={setShowServiceRequestForm}
+        />
       </div>
     </AuthenticatedLayout>
   );

@@ -276,6 +276,56 @@ export type Database = {
           },
         ]
       }
+      job_cards: {
+        Row: {
+          attachments: Json | null
+          completion_proof_url: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          progress_notes: Json | null
+          status: Database["public"]["Enums"]["job_card_status"] | null
+          title: string
+          updated_at: string | null
+          work_order_id: string
+        }
+        Insert: {
+          attachments?: Json | null
+          completion_proof_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          progress_notes?: Json | null
+          status?: Database["public"]["Enums"]["job_card_status"] | null
+          title: string
+          updated_at?: string | null
+          work_order_id: string
+        }
+        Update: {
+          attachments?: Json | null
+          completion_proof_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          progress_notes?: Json | null
+          status?: Database["public"]["Enums"]["job_card_status"] | null
+          title?: string
+          updated_at?: string | null
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_cards_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       milestones: {
         Row: {
           amount_allocated: number | null
@@ -974,6 +1024,90 @@ export type Database = {
           },
         ]
       }
+      service_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      service_negotiations: {
+        Row: {
+          created_at: string | null
+          id: string
+          notes: string | null
+          proposed_deliverables: Json | null
+          proposed_fee: number | null
+          proposed_scope: string | null
+          proposed_timeline_end: string | null
+          proposed_timeline_start: string | null
+          service_provider_id: string
+          service_request_id: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          proposed_deliverables?: Json | null
+          proposed_fee?: number | null
+          proposed_scope?: string | null
+          proposed_timeline_end?: string | null
+          proposed_timeline_start?: string | null
+          service_provider_id: string
+          service_request_id: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          proposed_deliverables?: Json | null
+          proposed_fee?: number | null
+          proposed_scope?: string | null
+          proposed_timeline_end?: string | null
+          proposed_timeline_start?: string | null
+          service_provider_id?: string
+          service_request_id?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_negotiations_service_provider_id_fkey"
+            columns: ["service_provider_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_negotiations_service_request_id_fkey"
+            columns: ["service_request_id"]
+            isOneToOne: false
+            referencedRelation: "service_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_providers: {
         Row: {
           company_name: string
@@ -1160,6 +1294,126 @@ export type Database = {
           },
         ]
       }
+      work_order_reviews: {
+        Row: {
+          communication_rating: number | null
+          created_at: string | null
+          id: string
+          quality_rating: number | null
+          rating: number | null
+          review_text: string | null
+          reviewer_id: string
+          timeliness_rating: number | null
+          updated_at: string | null
+          work_order_id: string
+        }
+        Insert: {
+          communication_rating?: number | null
+          created_at?: string | null
+          id?: string
+          quality_rating?: number | null
+          rating?: number | null
+          review_text?: string | null
+          reviewer_id: string
+          timeliness_rating?: number | null
+          updated_at?: string | null
+          work_order_id: string
+        }
+        Update: {
+          communication_rating?: number | null
+          created_at?: string | null
+          id?: string
+          quality_rating?: number | null
+          rating?: number | null
+          review_text?: string | null
+          reviewer_id?: string
+          timeliness_rating?: number | null
+          updated_at?: string | null
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_order_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_reviews_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_orders: {
+        Row: {
+          agreed_deliverables: Json | null
+          agreed_end_date: string | null
+          agreed_fee: number | null
+          agreed_scope: string
+          agreed_start_date: string | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          payment_status: Database["public"]["Enums"]["payment_status"] | null
+          service_provider_id: string
+          service_request_id: string
+          status: Database["public"]["Enums"]["work_order_status"] | null
+          terms_agreed_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          agreed_deliverables?: Json | null
+          agreed_end_date?: string | null
+          agreed_fee?: number | null
+          agreed_scope: string
+          agreed_start_date?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          payment_status?: Database["public"]["Enums"]["payment_status"] | null
+          service_provider_id: string
+          service_request_id: string
+          status?: Database["public"]["Enums"]["work_order_status"] | null
+          terms_agreed_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          agreed_deliverables?: Json | null
+          agreed_end_date?: string | null
+          agreed_fee?: number | null
+          agreed_scope?: string
+          agreed_start_date?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          payment_status?: Database["public"]["Enums"]["payment_status"] | null
+          service_provider_id?: string
+          service_request_id?: string
+          status?: Database["public"]["Enums"]["work_order_status"] | null
+          terms_agreed_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_orders_service_provider_id_fkey"
+            columns: ["service_provider_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_orders_service_request_id_fkey"
+            columns: ["service_request_id"]
+            isOneToOne: true
+            referencedRelation: "service_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1200,6 +1454,12 @@ export type Database = {
         | "sign"
         | "nominate"
         | "vote"
+      job_card_status:
+        | "not_started"
+        | "in_progress"
+        | "awaiting_client_input"
+        | "completed"
+        | "blocked"
       milestone_status:
         | "pending"
         | "in_progress"
@@ -1240,6 +1500,13 @@ export type Database = {
         | "assigned"
         | "in_progress"
         | "review_pending"
+        | "completed"
+        | "cancelled"
+      work_order_status:
+        | "in_progress"
+        | "pending_delivery"
+        | "delivered"
+        | "under_review"
         | "completed"
         | "cancelled"
     }
@@ -1389,6 +1656,13 @@ export const Constants = {
         "nominate",
         "vote",
       ],
+      job_card_status: [
+        "not_started",
+        "in_progress",
+        "awaiting_client_input",
+        "completed",
+        "blocked",
+      ],
       milestone_status: [
         "pending",
         "in_progress",
@@ -1434,6 +1708,14 @@ export const Constants = {
         "assigned",
         "in_progress",
         "review_pending",
+        "completed",
+        "cancelled",
+      ],
+      work_order_status: [
+        "in_progress",
+        "pending_delivery",
+        "delivered",
+        "under_review",
         "completed",
         "cancelled",
       ],

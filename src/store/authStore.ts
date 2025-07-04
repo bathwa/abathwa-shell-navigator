@@ -64,6 +64,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isAuthenticated: !!session,
           loading: false
         });
+        
+        // Fetch profile data when user logs in
+        if (session?.user) {
+          setTimeout(() => {
+            get().refreshUserProfile();
+          }, 0);
+        }
       }
     );
 
@@ -75,6 +82,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isAuthenticated: !!session,
         loading: false
       });
+      
+      // Fetch profile data for existing session
+      if (session?.user) {
+        setTimeout(() => {
+          get().refreshUserProfile();
+        }, 0);
+      }
     });
 
     return () => subscription.unsubscribe();
